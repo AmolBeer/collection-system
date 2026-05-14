@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Dropdown } from 'antd';
-import { UserOutlined, TeamOutlined, CalendarOutlined, SettingOutlined, DashboardOutlined, FileSearchOutlined, DownOutlined, KeyOutlined, DollarOutlined, FileTextOutlined, PartitionOutlined, ScheduleOutlined, SplitCellsOutlined } from '@ant-design/icons';
+import { UserOutlined, TeamOutlined, CalendarOutlined, SettingOutlined, DashboardOutlined, FileSearchOutlined, DownOutlined, KeyOutlined, DollarOutlined, FileTextOutlined, PartitionOutlined, ScheduleOutlined, SplitCellsOutlined, PauseCircleOutlined } from '@ant-design/icons';
 import AccountManagement from './AccountManagement';
 import OrganizationStructure from './OrganizationStructure';
 import StageConfig from '../StageConfig';
@@ -12,18 +12,39 @@ import RecoveryList from '../RecoveryList';
 import ReductionRuleConfig from './ReductionRuleConfig';
 import ScheduleManagement from './ScheduleManagement';
 import AutoAllocationManagement from './AutoAllocationManagement';
+import SuspendedCases, { SuspendedCase } from './SuspendedCases';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 const { Content, Sider } = Layout;
 
-type MenuItem = 'dashboard' | 'caseList' | 'recovery' | 'account' | 'organization' | 'stage' | 'role' | 'reduction' | 'schedule' | 'autoAllocation';
+type MenuItem = 'dashboard' | 'caseList' | 'suspendedCases' | 'recovery' | 'account' | 'organization' | 'stage' | 'role' | 'reduction' | 'schedule' | 'autoAllocation';
 
 const SystemManagement: React.FC = () => {
   const [current, setCurrent] = useState<MenuItem>('dashboard');
+  const [suspendedCases, setSuspendedCases] = useState<SuspendedCase[]>([]);
   const { language } = useLanguage();
 
   const handleClick = (e: any) => {
     setCurrent(e.key);
+  };
+
+  const handleSuspend = (caseIds: string[]) => {
+    const newSuspendedCases: SuspendedCase[] = caseIds.map((caseId, index) => ({
+      id: `SUSP-${Date.now()}-${index}`,
+      caseId,
+      borrowerName: `借款人${index + 1}`,
+      phone: '未知',
+      reason: '投诉',
+      operator: '当前用户',
+      endTime: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' '),
+      forbiddenFeatures: ['禁止分案', '禁止发送短信'],
+      createTime: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    }));
+    setSuspendedCases([...suspendedCases, ...newSuspendedCases]);
+  };
+
+  const handleResume = (caseIds: string[]) => {
+    setSuspendedCases(suspendedCases.filter(sc => !caseIds.includes(sc.caseId)));
   };
 
   const renderContent = () => {
@@ -31,7 +52,9 @@ const SystemManagement: React.FC = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'caseList':
-        return <CaseList />;
+        return <CaseList onSuspend={handleSuspend} />;
+      case 'suspendedCases':
+        return <SuspendedCases onResume={handleResume} />;
       case 'recovery':
         return <RecoveryList />;
       case 'account':
@@ -68,6 +91,9 @@ const SystemManagement: React.FC = () => {
           </Menu.Item>
           <Menu.Item key="caseList" icon={<FileSearchOutlined />}>
             案件列表
+          </Menu.Item>
+          <Menu.Item key="suspendedCases" icon={<PauseCircleOutlined />}>
+            停催列表
           </Menu.Item>
           <Menu.Item key="recovery" icon={<DollarOutlined />}>
             还款记录

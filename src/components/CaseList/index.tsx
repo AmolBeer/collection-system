@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Table, Button, Space, Input, Select, Card, Tag, message, Modal, Form } from 'antd';
+import { Table, Button, Space, Input, Select, Card, Tag, message, Modal, Form, DatePicker, Checkbox } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { SearchOutlined, FilterOutlined, EyeOutlined, TeamOutlined, UserOutlined, SwapOutlined } from '@ant-design/icons';
+import { SearchOutlined, FilterOutlined, EyeOutlined, TeamOutlined, UserOutlined, SwapOutlined, PauseCircleOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
+import dayjs, { Dayjs } from 'dayjs';
 
 interface Case {
   id: string;
@@ -42,7 +43,7 @@ const collectors = [
   { value: 'collector5', label: '催收员E', team: 'team2' },
 ];
 
-const CaseList: React.FC<{ onViewDetail: (caseId: string) => void }> = ({ onViewDetail }) => {
+const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (caseIds: string[]) => void }> = ({ onViewDetail, onSuspend }) => {
   const [cases, setCases] = useState<Case[]>(defaultCases);
   const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
@@ -54,7 +55,28 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void }> = ({ onView
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedCollector, setSelectedCollector] = useState('');
   const [distributionMode, setDistributionMode] = useState<'average' | 'manual'>('average');
+  const [suspendModalVisible, setSuspendModalVisible] = useState(false);
+  const [selectedReason, setSelectedReason] = useState('');
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [validityDate, setValidityDate] = useState<Dayjs | null>(null);
   const { t } = useLanguage();
+
+  const suspendReasons = [
+    { value: '投诉', label: '投诉' },
+    { value: '死亡', label: '死亡' },
+    { value: '住院', label: '住院' },
+    { value: '起诉', label: '起诉' },
+    { value: '其他', label: '其他' },
+  ];
+
+  const forbiddenFeatures = [
+    { value: '禁止分案', label: '禁止分案' },
+    { value: '禁止发送短信', label: '禁止发送短信' },
+    { value: '禁止电话外呼', label: '禁止电话外呼' },
+    { value: '禁止WA发送', label: '禁止WA发送' },
+    { value: '禁止Email发送', label: '禁止Email发送' },
+    { value: '停止计算罚息', label: '停止计算罚息' },
+  ];
 
   const filteredCases = useMemo(() => {
     return cases.filter(caseItem => {
@@ -225,6 +247,14 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void }> = ({ onView
           >
             人工指派
           </Button>
+          <Button
+            type="default"
+            icon={<PauseCircleOutlined />}
+            disabled={selectedCases.length === 0}
+            onClick={() => setSuspendModalVisible(true)}
+          >
+            停催
+          </Button>
           <Input
             placeholder="搜索借款人、电话或案件ID"
             prefix={<SearchOutlined />}
@@ -342,6 +372,74 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void }> = ({ onView
               />
             </Form.Item>
           )}
+
+          <Form.Item>
+            <div style={{ color: '#666' }}>
+              已选择 {selectedCases.length} 个案件
+            </div>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 停催模态框 */}
+      <Modal
+        title="停催设置"
+        open={suspendModalVisible}
+        onOk={() => {
+          if (!selectedReason) {
+            message.error('请选择停催原因');
+            return;
+          }
+          if (selectedFeatures.length === 0) {
+            message.error('请至少选择一项禁止功能');
+            return;
+          }
+          
+          // 从案件列表移除
+          setCases(cases.filter(c => !selectedCases.includes(c.id)));
+          onSuspend(selectedCases);
+          setSuspendModalVisible(false);
+          setSelectedCases([]);
+          setSelectedReason('');
+          setSelectedFeatures([]);
+          setValidityDate(null);
+          message.success(`成功将 ${selectedCases.length} 个案件加入停催列表`);
+        }}
+        onCancel={() => {
+          setSuspendModalVisible(false);
+          setSelectedReason('');
+          setSelectedFeatures([]);
+          setValidityDate(null);
+        }}
+        width={600}
+      >
+        <Form layout="vertical">
+          <Form.Item label="停催原因 *">
+            <Select
+              value={selectedReason}
+              onChange={setSelectedReason}
+              options={suspendReasons}
+              placeholder="请选择停催原因"
+            />
+          </Form.Item>
+
+          <Form.Item label="有效期">
+            <DatePicker
+              value={validityDate}
+              onChange={setValidityDate}
+              showTime
+              placeholder="选择停催到期时间"
+            />
+          </Form.Item>
+
+          <Form.Item label="禁止功能 *">
+            <Checkbox.Group
+              options={forbiddenFeatures}
+              value={selectedFeatures}
+              onChange={setSelectedFeatures}
+              style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}
+            />
+          </Form.Item>
 
           <Form.Item>
             <div style={{ color: '#666' }}>
