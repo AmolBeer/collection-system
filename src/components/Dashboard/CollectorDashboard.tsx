@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Row, Col, Statistic, Progress, Table, List, Avatar, Tag, Badge } from 'antd';
-import { BarChartOutlined, LineChartOutlined, CheckCircleOutlined, ClockCircleOutlined, DollarOutlined, UserOutlined } from '@ant-design/icons';
+import { BarChartOutlined, CheckCircleOutlined, ClockCircleOutlined, DollarOutlined, ArrowUpOutlined, PhoneOutlined, SendOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface TaskData {
@@ -30,7 +30,6 @@ interface PerformanceData {
 const CollectorDashboard: React.FC = () => {
   const { t } = useLanguage();
 
-  // 模拟数据
   const summaryData = {
     currentTasks: 15,
     completedTasks: 45,
@@ -40,17 +39,17 @@ const CollectorDashboard: React.FC = () => {
   };
 
   const currentTasks: TaskData[] = [
-    { id: 'TASK-001', borrower: '张三', amount: 50000, overdueDays: 15, stage: 'M1', status: '待处理', assignedTime: '2024-04-01 09:00' },
-    { id: 'TASK-002', borrower: '李四', amount: 80000, overdueDays: 35, stage: 'M2', status: '处理中', assignedTime: '2024-03-31 14:30' },
-    { id: 'TASK-003', borrower: '王五', amount: 30000, overdueDays: 5, stage: 'M0', status: '待处理', assignedTime: '2024-04-01 10:15' },
-    { id: 'TASK-004', borrower: '赵六', amount: 60000, overdueDays: 65, stage: 'M3', status: '处理中', assignedTime: '2024-03-30 11:20' },
+    { id: 'KREDITOK008946', borrower: 'EZI SADRAKH SAPUTRA', amount: 267947, overdueDays: 12, stage: 'M1', status: 'Open', assignedTime: '10 May 2024, 09:00' },
+    { id: 'KREDITOK008947', borrower: 'JOHN DOE', amount: 800000, overdueDays: 35, stage: 'M2', status: 'Processing', assignedTime: '09 May 2024, 14:30' },
+    { id: 'KREDITOK008948', borrower: 'JANE SMITH', amount: 300000, overdueDays: 5, stage: 'M0', status: 'Open', assignedTime: '10 May 2024, 10:15' },
+    { id: 'KREDITOK008949', borrower: 'MICHAEL BROWN', amount: 600000, overdueDays: 65, stage: 'M3', status: 'Processing', assignedTime: '08 May 2024, 11:20' },
   ];
 
   const recentActivities: ActivityData[] = [
-    { id: 'ACT-001', action: '电话联系', case: 'TASK-005', result: '已承诺还款', time: '2024-04-01 10:30' },
-    { id: 'ACT-002', action: '短信提醒', case: 'TASK-006', result: '已读未回复', time: '2024-04-01 09:15' },
-    { id: 'ACT-003', action: '上门拜访', case: 'TASK-007', result: '已还款', time: '2024-03-31 16:45' },
-    { id: 'ACT-004', action: '电话联系', case: 'TASK-008', result: '无法联系', time: '2024-03-31 14:20' },
+    { id: 'ACT-001', action: '电话联系', case: 'KREDITOK008946', result: '已承诺还款', time: '10 May 2024, 10:30' },
+    { id: 'ACT-002', action: '短信提醒', case: 'KREDITOK008947', result: '已读未回复', time: '10 May 2024, 09:15' },
+    { id: 'ACT-003', action: '上门拜访', case: 'KREDITOK008948', result: '已还款', time: '09 May 2024, 16:45' },
+    { id: 'ACT-004', action: '电话联系', case: 'KREDITOK008949', result: '无法联系', time: '09 May 2024, 14:20' },
   ];
 
   const performanceTrend: PerformanceData[] = [
@@ -66,24 +65,37 @@ const CollectorDashboard: React.FC = () => {
       title: '任务ID',
       dataIndex: 'id',
       key: 'id',
+      render: (id: string) => (
+        <span style={{ color: '#0d4f3c', fontWeight: '500', fontSize: '13px' }}>{id}</span>
+      ),
     },
     {
       title: t.borrowerName,
       dataIndex: 'borrower',
       key: 'borrower',
+      render: (name: string) => (
+        <span style={{ color: '#1f2937', fontWeight: '500', fontSize: '13px' }}>{name}</span>
+      ),
     },
     {
       title: t.overdueAmount,
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount: number) => `¥${amount.toLocaleString()}`,
+      render: (amount: number) => (
+        <span style={{ fontWeight: '600', color: '#dc2626' }}>
+          {amount.toLocaleString()} IDR
+        </span>
+      ),
     },
     {
       title: t.overdueDays,
       dataIndex: 'overdueDays',
       key: 'overdueDays',
       render: (days: number) => (
-        <Tag color={days > 30 ? 'red' : days > 15 ? 'orange' : 'blue'}>
+        <Tag 
+          color={days > 60 ? 'red' : days > 30 ? 'orange' : days > 15 ? 'gold' : 'blue'}
+          style={{ fontSize: '12px', fontWeight: '500' }}
+        >
           {days} 天
         </Tag>
       ),
@@ -92,13 +104,24 @@ const CollectorDashboard: React.FC = () => {
       title: t.stageName,
       dataIndex: 'stage',
       key: 'stage',
+      render: (stage: string) => (
+        <Tag 
+          color={stage === 'M0' ? 'blue' : stage === 'M1' ? 'gold' : stage === 'M2' ? 'orange' : stage === 'M3' ? 'red' : 'purple'}
+          style={{ fontSize: '12px', fontWeight: '500' }}
+        >
+          {stage}
+        </Tag>
+      ),
     },
     {
       title: t.status,
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={status === '待处理' ? 'blue' : status === '处理中' ? 'orange' : 'green'}>
+        <Tag 
+          color={status === 'Open' ? 'green' : status === 'Processing' ? 'orange' : 'blue'}
+          style={{ fontSize: '12px', fontWeight: '500' }}
+        >
           {status}
         </Tag>
       ),
@@ -107,6 +130,9 @@ const CollectorDashboard: React.FC = () => {
       title: '分配时间',
       dataIndex: 'assignedTime',
       key: 'assignedTime',
+      render: (time: string) => (
+        <span style={{ color: '#6b7280', fontSize: '12px' }}>{time}</span>
+      ),
     },
   ];
 
@@ -114,82 +140,127 @@ const CollectorDashboard: React.FC = () => {
     <div>
       <Row gutter={[16, 16]}>
         <Col span={6}>
-          <Card>
+          <Card style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <Statistic
               title={t.currentTasks}
               value={summaryData.currentTasks}
-              prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              prefix={<ClockCircleOutlined style={{ color: '#3b82f6' }} />}
+              valueStyle={{ color: '#3b82f6', fontWeight: '700', fontSize: '28px' }}
+              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <Statistic
               title={t.completedTasks}
               value={summaryData.completedTasks}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              prefix={<CheckCircleOutlined style={{ color: '#22c55e' }} />}
+              valueStyle={{ color: '#22c55e', fontWeight: '700', fontSize: '28px' }}
+              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <Statistic
               title={t.personalRecoveryRate}
               value={summaryData.personalRecoveryRate}
               suffix="%"
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: '#722ed1' }}
+              prefix={<ArrowUpOutlined style={{ color: '#0d4f3c' }} />}
+              valueStyle={{ color: '#0d4f3c', fontWeight: '700', fontSize: '28px' }}
+              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <Statistic
               title={t.recoveredAmount}
               value={summaryData.recoveredAmount}
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: '#fa8c16' }}
-              formatter={(value) => `¥${(value / 10000).toFixed(2)}万`}
+              prefix={<DollarOutlined style={{ color: '#f97316' }} />}
+              valueStyle={{ color: '#f97316', fontWeight: '700', fontSize: '28px' }}
+              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
+              formatter={(value) => `${value.toLocaleString()} IDR`}
             />
           </Card>
         </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col span={12}>
-          <Card title={t.currentTasks} extra={<BarChartOutlined />}>
+        <Col span={14}>
+          <Card 
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BarChartOutlined style={{ color: '#0d4f3c' }} />
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>{t.currentTasks}</span>
+              </div>
+            }
+            style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+          >
             <Table
               columns={taskColumns}
               dataSource={currentTasks}
               rowKey="id"
-              size="small"
+              size="middle"
               pagination={false}
             />
           </Card>
         </Col>
-        <Col span={12}>
-          <Card title={t.recentActivities} extra={<LineChartOutlined />}>
+        <Col span={10}>
+          <Card 
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <PhoneOutlined style={{ color: '#0d4f3c' }} />
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>{t.recentActivities}</span>
+              </div>
+            }
+            style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+          >
             <List
               dataSource={recentActivities}
               rowKey="id"
               renderItem={(item) => (
-                <List.Item>
-                  <List.Item.Meta
-                    avatar={<Avatar>{item.action.charAt(0)}</Avatar>}
-                    title={
-                      <span>
-                        {item.action} <Tag color="blue">{item.case}</Tag>
-                      </span>
-                    }
-                    description={
-                      <div>
-                        <Badge status={item.result === '已还款' ? 'success' : item.result === '已承诺还款' ? 'processing' : 'default'} text={item.result} />
-                        <span style={{ marginLeft: 8 }}>{item.time}</span>
+                <List.Item 
+                  style={{ 
+                    padding: '12px 0', 
+                    borderBottom: '1px solid #f3f4f6',
+                    marginBottom: '0'
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ 
+                      width: '36px', 
+                      height: '36px', 
+                      borderRadius: '50%', 
+                      backgroundColor: '#f3f4f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {item.action === '电话联系' ? (
+                        <PhoneOutlined style={{ color: '#22c55e' }} />
+                      ) : (
+                        <SendOutlined style={{ color: '#3b82f6' }} />
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>
+                          {item.action}
+                        </span>
+                        <Tag color="blue" style={{ fontSize: '11px' }}>{item.case}</Tag>
                       </div>
-                    }
-                  />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                        <Badge 
+                          status={item.result === '已还款' ? 'success' : item.result === '已承诺还款' ? 'processing' : 'default'} 
+                          text={item.result} 
+                          style={{ fontSize: '11px' }}
+                        />
+                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>{item.time}</span>
+                      </div>
+                    </div>
+                  </div>
                 </List.Item>
               )}
             />
@@ -199,27 +270,54 @@ const CollectorDashboard: React.FC = () => {
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col span={24}>
-          <Card title={t.performanceTrend} extra={<LineChartOutlined />}>
-            <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ textAlign: 'center' }}>
-                <h3>本周业绩趋势</h3>
-                <div style={{ marginTop: 20 }}>
-                  {performanceTrend.map((item) => (
-                    <div key={item.day} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{ width: 60, textAlign: 'left' }}>{item.day}</div>
-                      <div style={{ flex: 1, margin: '0 16px' }}>
-                        <Progress 
-                          percent={(item.cases / 12) * 100} 
-                          size="small" 
-                          status="active"
-                        />
-                      </div>
-                      <div style={{ width: 120, textAlign: 'right' }}>
-                        {item.cases} 件 / ¥{item.amount.toLocaleString()}
+          <Card 
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ArrowUpOutlined style={{ color: '#0d4f3c' }} />
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>{t.performanceTrend}</span>
+              </div>
+            }
+            style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+          >
+            <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '100%', padding: '20px' }}>
+                {performanceTrend.map((item) => (
+                  <div key={item.day} style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                    <div style={{ width: '60px', textAlign: 'left', fontWeight: '500', color: '#1f2937' }}>
+                      {item.day}
+                    </div>
+                    <div style={{ flex: 1, margin: '0 20px' }}>
+                      <div style={{ 
+                        height: '24px', 
+                        backgroundColor: '#f3f4f6', 
+                        borderRadius: '6px',
+                        overflow: 'hidden'
+                      }}>
+                        <div 
+                          style={{ 
+                            height: '100%', 
+                            width: `${(item.cases / 15) * 100}%`,
+                            background: 'linear-gradient(90deg, #0d4f3c 0%, #1a6b56 100%)',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            paddingLeft: '12px',
+                            transition: 'width 0.3s ease'
+                          }}
+                        >
+                          <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: '500' }}>
+                            {item.cases} 件
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div style={{ width: '150px', textAlign: 'right' }}>
+                      <span style={{ fontWeight: '600', color: '#0d4f3c' }}>
+                        {item.amount.toLocaleString()} IDR
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </Card>

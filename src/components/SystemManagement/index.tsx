@@ -22,10 +22,20 @@ type MenuItem = 'dashboard' | 'caseList' | 'suspendedCases' | 'recovery' | 'acco
 const SystemManagement: React.FC = () => {
   const [current, setCurrent] = useState<MenuItem>('dashboard');
   const [suspendedCases, setSuspendedCases] = useState<SuspendedCase[]>([]);
-  const { language } = useLanguage();
+  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
+  useLanguage();
 
   const handleClick = (e: any) => {
     setCurrent(e.key);
+    setSelectedCaseId('');
+  };
+
+  const handleViewDetail = (caseId: string) => {
+    setSelectedCaseId(caseId);
+  };
+
+  const handleBackToList = () => {
+    setSelectedCaseId('');
   };
 
   const handleSuspend = (caseIds: string[]) => {
@@ -48,11 +58,15 @@ const SystemManagement: React.FC = () => {
   };
 
   const renderContent = () => {
+    if (selectedCaseId) {
+      return <CaseDetail caseId={selectedCaseId} onBack={handleBackToList} />;
+    }
+    
     switch (current) {
       case 'dashboard':
         return <Dashboard />;
       case 'caseList':
-        return <CaseList onSuspend={handleSuspend} />;
+        return <CaseList onViewDetail={handleViewDetail} onSuspend={handleSuspend} />;
       case 'suspendedCases':
         return <SuspendedCases onResume={handleResume} />;
       case 'recovery':
@@ -85,58 +99,98 @@ const SystemManagement: React.FC = () => {
           selectedKeys={[current]}
           style={{ height: '100%', borderRight: 0 }}
           onClick={handleClick}
-        >
-          <Menu.Item key="dashboard" icon={<DashboardOutlined />}>
-            仪表盘
-          </Menu.Item>
-          <Menu.Item key="caseList" icon={<FileSearchOutlined />}>
-            案件列表
-          </Menu.Item>
-          <Menu.Item key="suspendedCases" icon={<PauseCircleOutlined />}>
-            停催列表
-          </Menu.Item>
-          <Menu.Item key="recovery" icon={<DollarOutlined />}>
-            还款记录
-          </Menu.Item>
-          <Menu.SubMenu key="admin" icon={<SettingOutlined />} title="系统设置">
-            <Menu.Item key="account" icon={<UserOutlined />}>
-              账号管理
-            </Menu.Item>
-            <Menu.Item key="organization" icon={<TeamOutlined />}>
-              组织架构
-            </Menu.Item>
-            <Menu.Item key="role" icon={<KeyOutlined />}>
-              角色管理
-            </Menu.Item>
-          </Menu.SubMenu>
-          <Menu.SubMenu key="config" icon={<FileTextOutlined />} title="业务配置">
-            <Menu.Item key="stage" icon={<PartitionOutlined />}>
-              阶段配置
-            </Menu.Item>
-            <Menu.Item key="autoAllocation" icon={<SplitCellsOutlined />}>
-              自动分案
-            </Menu.Item>
-            <Menu.Item key="reduction" icon={<DollarOutlined />}>
-              减免规则
-            </Menu.Item>
-          </Menu.SubMenu>
-          <Menu.SubMenu key="workforce" icon={<TeamOutlined />} title="人员管理">
-            <Menu.Item key="schedule" icon={<ScheduleOutlined />}>
-              催员排班
-            </Menu.Item>
-          </Menu.SubMenu>
-        </Menu>
+          items={[
+            {
+              key: 'dashboard',
+              icon: <DashboardOutlined />,
+              label: '仪表盘',
+            },
+            {
+              key: 'caseList',
+              icon: <FileSearchOutlined />,
+              label: '案件列表',
+            },
+            {
+              key: 'suspendedCases',
+              icon: <PauseCircleOutlined />,
+              label: '停催列表',
+            },
+            {
+              key: 'recovery',
+              icon: <DollarOutlined />,
+              label: '还款记录',
+            },
+            {
+              key: 'admin',
+              icon: <SettingOutlined />,
+              label: '系统设置',
+              children: [
+                {
+                  key: 'account',
+                  icon: <UserOutlined />,
+                  label: '账号管理',
+                },
+                {
+                  key: 'organization',
+                  icon: <TeamOutlined />,
+                  label: '组织架构',
+                },
+                {
+                  key: 'role',
+                  icon: <KeyOutlined />,
+                  label: '角色管理',
+                },
+              ],
+            },
+            {
+              key: 'config',
+              icon: <FileTextOutlined />,
+              label: '业务配置',
+              children: [
+                {
+                  key: 'stage',
+                  icon: <PartitionOutlined />,
+                  label: '阶段配置',
+                },
+                {
+                  key: 'autoAllocation',
+                  icon: <SplitCellsOutlined />,
+                  label: '自动分案',
+                },
+                {
+                  key: 'reduction',
+                  icon: <DollarOutlined />,
+                  label: '减免规则',
+                },
+              ],
+            },
+            {
+              key: 'workforce',
+              icon: <TeamOutlined />,
+              label: '人员管理',
+              children: [
+                {
+                  key: 'schedule',
+                  icon: <ScheduleOutlined />,
+                  label: '催员排班',
+                },
+              ],
+            },
+          ]}
+        />
       </Sider>
       <Layout style={{ padding: '0 24px 24px' }}>
         <Content
           style={{
             background: '#fff',
             padding: 24,
-            margin: 0,
             minHeight: 280,
+            overflow: 'auto',
           }}
         >
-          {renderContent()}
+          <div style={{ minWidth: '1200px' }}>
+            {renderContent()}
+          </div>
         </Content>
       </Layout>
     </Layout>

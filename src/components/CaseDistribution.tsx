@@ -160,7 +160,7 @@ function CaseDistribution() {
           />
           <Button type="primary" onClick={handleAssign}>{t.confirmAssign}</Button>
           <span style={{ color: '#888' }}>
-            {t.selectedCount} <strong>{selectedRows.length}</strong> {t.件案件}
+            {t.selectedCount} <strong>{selectedRows.length}</strong> {t.casesSuffix}
           </span>
         </div>
       </Card>

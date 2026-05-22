@@ -2,7 +2,6 @@ import { Language } from '../types';
 
 export interface Translations {
   stageConfig: string;
-  caseDistribution: string;
   stageCode: string;
   stageName: string;
   overdueRange: string;
@@ -32,6 +31,7 @@ export interface Translations {
   assignTo: string;
   confirmAssign: string;
   selectedCount: string;
+  casesSuffix: string;
   borrowerName: string;
   overdueDays: string;
   overdueAmount: string;
@@ -83,7 +83,6 @@ export interface Translations {
 export const translations: Record<Language, Translations> = {
   zh: {
     stageConfig: '逾期阶段配置',
-    caseDistribution: '分案管理',
     stageCode: '阶段编码',
     stageName: '阶段名称',
     overdueRange: '逾期范围',
@@ -113,7 +112,7 @@ export const translations: Record<Language, Translations> = {
     assignTo: '批量分配至',
     confirmAssign: '确认分配',
     selectedCount: '已选择',
-    件案件: '件案件',
+    casesSuffix: '件案件',
     borrowerName: '借款人',
     overdueDays: '逾期天数',
     overdueAmount: '逾期金额',
@@ -163,7 +162,6 @@ export const translations: Record<Language, Translations> = {
   },
   id: {
     stageConfig: 'Konfigurasi Tahap',
-    caseDistribution: 'Distribusi Kasus',
     stageCode: 'Kode Tahap',
     stageName: 'Nama Tahap',
     overdueRange: 'Rentang',
@@ -193,7 +191,7 @@ export const translations: Record<Language, Translations> = {
     assignTo: 'Distribusikan ke',
     confirmAssign: 'Konfirmasi',
     selectedCount: 'Dipilih',
-    件案件: 'kasus',
+    casesSuffix: 'kasus',
     borrowerName: 'Nama',
     overdueDays: 'Hari',
     overdueAmount: 'Jumlah',

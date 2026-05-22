@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Row, Col, Statistic, Progress, Table, List, Avatar, Tag } from 'antd';
-import { BarChartOutlined, LineChartOutlined, TeamOutlined, UserOutlined, DollarOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { BarChartOutlined, TeamOutlined, UserOutlined, DollarOutlined, CheckCircleOutlined, ClockCircleOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface CaseData {
@@ -20,7 +20,6 @@ interface TeamData {
 const AdminDashboard: React.FC = () => {
   const { t } = useLanguage();
 
-  // 模拟数据
   const summaryData = {
     totalCases: 1250,
     pendingCases: 320,
@@ -45,10 +44,10 @@ const AdminDashboard: React.FC = () => {
   ];
 
   const recentActivities = [
-    { id: '1', user: '张三', action: '完成案件', case: 'CASE-001', time: '2024-04-01 10:30' },
-    { id: '2', user: '李四', action: '分配案件', case: 'CASE-002', time: '2024-04-01 09:15' },
-    { id: '3', user: '王五', action: '更新状态', case: 'CASE-003', time: '2024-04-01 08:45' },
-    { id: '4', user: '赵六', action: '完成案件', case: 'CASE-004', time: '2024-03-31 17:20' },
+    { id: '1', user: 'Dewi Anggraini', action: '完成案件', case: 'KREDITOK008946', time: '10 May 2024, 10:30' },
+    { id: '2', user: 'Budi Santoso', action: '分配案件', case: 'KREDITOK008947', time: '10 May 2024, 09:15' },
+    { id: '3', user: 'Siti Aminah', action: '更新状态', case: 'KREDITOK008948', time: '10 May 2024, 08:45' },
+    { id: '4', user: 'Rudi Hartono', action: '完成案件', case: 'KREDITOK008949', time: '09 May 2024, 17:20' },
   ];
 
   const columns = [
@@ -56,6 +55,14 @@ const AdminDashboard: React.FC = () => {
       title: t.stageName,
       dataIndex: 'stage',
       key: 'stage',
+      render: (stage: string) => (
+        <Tag 
+          color={stage === 'M0' ? 'blue' : stage === 'M1' ? 'gold' : stage === 'M2' ? 'orange' : stage === 'M3' ? 'red' : 'purple'}
+          style={{ fontSize: '12px', fontWeight: '500' }}
+        >
+          {stage}
+        </Tag>
+      ),
     },
     {
       title: t.totalCases,
@@ -66,7 +73,11 @@ const AdminDashboard: React.FC = () => {
       title: t.totalAmount,
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount: number) => `¥${amount.toLocaleString()}`,
+      render: (amount: number) => (
+        <span style={{ fontWeight: '600', color: '#dc2626' }}>
+          {amount.toLocaleString()} IDR
+        </span>
+      ),
     },
     {
       title: t.recoveryRate,
@@ -74,8 +85,8 @@ const AdminDashboard: React.FC = () => {
       key: 'recoveryRate',
       render: (rate: number) => (
         <div>
-          <Progress percent={rate} size="small" />
-          <span style={{ display: 'block', marginTop: 4 }}>{rate}%</span>
+          <Progress percent={rate} size="small" strokeColor="#0d4f3c" />
+          <span style={{ display: 'block', marginTop: 4, textAlign: 'right', fontWeight: '500', color: '#0d4f3c' }}>{rate}%</span>
         </div>
       ),
     },
@@ -96,13 +107,19 @@ const AdminDashboard: React.FC = () => {
       title: t.recoveryRate,
       dataIndex: 'recoveryRate',
       key: 'recoveryRate',
-      render: (rate: number) => `${rate}%`,
+      render: (rate: number) => (
+        <span style={{ fontWeight: '600', color: '#0d4f3c' }}>{rate}%</span>
+      ),
     },
     {
       title: t.recoveredAmount,
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount: number) => `¥${amount.toLocaleString()}`,
+      render: (amount: number) => (
+        <span style={{ fontWeight: '600', color: '#16a34a' }}>
+          {amount.toLocaleString()} IDR
+        </span>
+      ),
     },
   ];
 
@@ -110,67 +127,87 @@ const AdminDashboard: React.FC = () => {
     <div>
       <Row gutter={[16, 16]}>
         <Col span={6}>
-          <Card>
+          <Card style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <Statistic
               title={t.totalCases}
               value={summaryData.totalCases}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              prefix={<UserOutlined style={{ color: '#0d4f3c' }} />}
+              valueStyle={{ color: '#1f2937', fontWeight: '700', fontSize: '28px' }}
+              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <Statistic
               title={t.pendingCases}
               value={summaryData.pendingCases}
-              prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#faad14' }}
+              prefix={<ClockCircleOutlined style={{ color: '#f97316' }} />}
+              valueStyle={{ color: '#f97316', fontWeight: '700', fontSize: '28px' }}
+              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <Statistic
               title={t.completedCases}
               value={summaryData.completedCases}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              prefix={<CheckCircleOutlined style={{ color: '#22c55e' }} />}
+              valueStyle={{ color: '#22c55e', fontWeight: '700', fontSize: '28px' }}
+              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <Statistic
               title={t.recoveryRate}
               value={summaryData.recoveryRate}
               suffix="%"
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: '#722ed1' }}
+              prefix={<ArrowUpOutlined style={{ color: '#0d4f3c' }} />}
+              valueStyle={{ color: '#0d4f3c', fontWeight: '700', fontSize: '28px' }}
+              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col span={12}>
-          <Card title={t.caseDistribution} extra={<BarChartOutlined />}>
+        <Col span={14}>
+          <Card 
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BarChartOutlined style={{ color: '#0d4f3c' }} />
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>{t.caseDistribution}</span>
+              </div>
+            }
+            style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+          >
             <Table
               columns={columns}
               dataSource={caseDistribution}
               rowKey="stage"
-              size="small"
+              size="middle"
               pagination={false}
             />
           </Card>
         </Col>
-        <Col span={12}>
-          <Card title={t.teamPerformance} extra={<TeamOutlined />}>
+        <Col span={10}>
+          <Card 
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <TeamOutlined style={{ color: '#0d4f3c' }} />
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>{t.teamPerformance}</span>
+              </div>
+            }
+            style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+          >
             <Table
               columns={teamColumns}
               dataSource={teamPerformance}
               rowKey="name"
-              size="small"
+              size="middle"
               pagination={false}
             />
           </Card>
@@ -179,20 +216,44 @@ const AdminDashboard: React.FC = () => {
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col span={24}>
-          <Card title={t.recentActivities} extra={<LineChartOutlined />}>
+          <Card 
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <DollarOutlined style={{ color: '#0d4f3c' }} />
+                <span style={{ fontWeight: '600', color: '#1f2937' }}>{t.recentActivities}</span>
+              </div>
+            }
+            style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+          >
             <List
               dataSource={recentActivities}
               rowKey="id"
               renderItem={(item) => (
-                <List.Item>
+                <List.Item 
+                  style={{ 
+                    padding: '12px 0', 
+                    borderBottom: '1px solid #f3f4f6',
+                    marginBottom: '0'
+                  }}
+                >
                   <List.Item.Meta
-                    avatar={<Avatar>{item.user.charAt(0)}</Avatar>}
+                    avatar={
+                      <Avatar 
+                        style={{ backgroundColor: '#0d4f3c' }}
+                      >
+                        {item.user.charAt(0)}
+                      </Avatar>
+                    }
                     title={
                       <span>
-                        {item.user} {item.action} <Tag color="blue">{item.case}</Tag>
+                        <strong style={{ color: '#1f2937' }}>{item.user}</strong> 
+                        <span style={{ color: '#6b7280', margin: '0 8px' }}>{item.action}</span>
+                        <Tag color="blue" style={{ fontSize: '11px' }}>{item.case}</Tag>
                       </span>
                     }
-                    description={item.time}
+                    description={
+                      <span style={{ color: '#9ca3af', fontSize: '12px' }}>{item.time}</span>
+                    }
                   />
                 </List.Item>
               )}

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Table, Button, Space, Input, Select, Card, Tag, message, Modal, Form, DatePicker, Checkbox } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { SearchOutlined, FilterOutlined, EyeOutlined, TeamOutlined, UserOutlined, SwapOutlined, PauseCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, SwapOutlined, PauseCircleOutlined, FilterOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 import dayjs, { Dayjs } from 'dayjs';
 
@@ -19,14 +19,14 @@ interface Case {
 }
 
 const defaultCases: Case[] = [
-  { id: 'CASE-001', borrowerName: '张三', phone: '13800138001', overdueDays: 15, amount: 50000, stage: 'M1', status: '待处理', assignedTo: '催收员A', createTime: '2024-03-15 10:00:00', lastUpdateTime: '2024-03-30 14:30:00' },
-  { id: 'CASE-002', borrowerName: '李四', phone: '13800138002', overdueDays: 35, amount: 80000, stage: 'M2', status: '处理中', assignedTo: '催收员B', createTime: '2024-03-10 09:00:00', lastUpdateTime: '2024-03-31 10:15:00' },
-  { id: 'CASE-003', borrowerName: '王五', phone: '13800138003', overdueDays: 5, amount: 30000, stage: 'M0', status: '待处理', assignedTo: '催收员A', createTime: '2024-03-20 11:00:00', lastUpdateTime: '2024-03-29 09:45:00' },
-  { id: 'CASE-004', borrowerName: '赵六', phone: '13800138004', overdueDays: 65, amount: 60000, stage: 'M3', status: '处理中', assignedTo: '催收员C', createTime: '2024-02-25 14:00:00', lastUpdateTime: '2024-03-31 16:20:00' },
-  { id: 'CASE-005', borrowerName: '钱七', phone: '13800138005', overdueDays: 100, amount: 120000, stage: 'M4+', status: '待处理', assignedTo: '催收员B', createTime: '2024-02-10 08:00:00', lastUpdateTime: '2024-03-28 11:30:00' },
-  { id: 'CASE-006', borrowerName: '孙八', phone: '13800138006', overdueDays: 25, amount: 45000, stage: 'M1', status: '已完成', assignedTo: '催收员A', createTime: '2024-03-18 13:00:00', lastUpdateTime: '2024-03-30 15:45:00' },
-  { id: 'CASE-007', borrowerName: '周九', phone: '13800138007', overdueDays: 45, amount: 75000, stage: 'M2', status: '处理中', assignedTo: '催收员C', createTime: '2024-03-05 10:30:00', lastUpdateTime: '2024-03-31 09:20:00' },
-  { id: 'CASE-008', borrowerName: '吴十', phone: '13800138008', overdueDays: 85, amount: 90000, stage: 'M3', status: '待处理', assignedTo: '催收员B', createTime: '2024-02-20 15:00:00', lastUpdateTime: '2024-03-29 14:15:00' },
+  { id: 'KREDITOK008946', borrowerName: 'EZI SADRAKH SAPUTRA', phone: '0821 6273 6949', overdueDays: 12, amount: 267947, stage: 'M1', status: 'Open', assignedTo: 'Dewi Anggraini', createTime: '2024-03-15 10:00:00', lastUpdateTime: '2024-03-30 14:30:00' },
+  { id: 'KREDITOK008947', borrowerName: 'JOHN DOE', phone: '0812 3456 7890', overdueDays: 35, amount: 800000, stage: 'M2', status: 'Processing', assignedTo: 'Budi Santoso', createTime: '2024-03-10 09:00:00', lastUpdateTime: '2024-03-31 10:15:00' },
+  { id: 'KREDITOK008948', borrowerName: 'JANE SMITH', phone: '0813 2233 4455', overdueDays: 5, amount: 300000, stage: 'M0', status: 'Open', assignedTo: 'Dewi Anggraini', createTime: '2024-03-20 11:00:00', lastUpdateTime: '2024-03-29 09:45:00' },
+  { id: 'KREDITOK008949', borrowerName: 'MICHAEL BROWN', phone: '0811 6677 8899', overdueDays: 65, amount: 600000, stage: 'M3', status: 'Processing', assignedTo: 'Siti Aminah', createTime: '2024-02-25 14:00:00', lastUpdateTime: '2024-03-31 16:20:00' },
+  { id: 'KREDITOK008950', borrowerName: 'SARAH DAVIS', phone: '0822 1122 3344', overdueDays: 100, amount: 1200000, stage: 'M4+', status: 'Open', assignedTo: 'Budi Santoso', createTime: '2024-02-10 08:00:00', lastUpdateTime: '2024-03-28 11:30:00' },
+  { id: 'KREDITOK008951', borrowerName: 'ROBERT WILSON', phone: '0819 5566 7788', overdueDays: 25, amount: 450000, stage: 'M1', status: 'Completed', assignedTo: 'Dewi Anggraini', createTime: '2024-03-18 13:00:00', lastUpdateTime: '2024-03-30 15:45:00' },
+  { id: 'KREDITOK008952', borrowerName: 'EMILY JOHNSON', phone: '0818 9900 1122', overdueDays: 45, amount: 750000, stage: 'M2', status: 'Processing', assignedTo: 'Siti Aminah', createTime: '2024-03-05 10:30:00', lastUpdateTime: '2024-03-31 09:20:00' },
+  { id: 'KREDITOK008953', borrowerName: 'WILLIAM TAYLOR', phone: '0817 3344 5566', overdueDays: 85, amount: 900000, stage: 'M3', status: 'Open', assignedTo: 'Budi Santoso', createTime: '2024-02-20 15:00:00', lastUpdateTime: '2024-03-29 14:15:00' },
 ];
 
 const teams = [
@@ -36,11 +36,11 @@ const teams = [
 ];
 
 const collectors = [
-  { value: 'collector1', label: '催收员A', team: 'team1' },
-  { value: 'collector2', label: '催收员B', team: 'team2' },
-  { value: 'collector3', label: '催收员C', team: 'team3' },
-  { value: 'collector4', label: '催收员D', team: 'team1' },
-  { value: 'collector5', label: '催收员E', team: 'team2' },
+  { value: 'collector1', label: 'Dewi Anggraini', team: 'team1' },
+  { value: 'collector2', label: 'Budi Santoso', team: 'team2' },
+  { value: 'collector3', label: 'Siti Aminah', team: 'team3' },
+  { value: 'collector4', label: 'Rudi Hartono', team: 'team1' },
+  { value: 'collector5', label: 'Lisa Wijaya', team: 'team2' },
 ];
 
 const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (caseIds: string[]) => void }> = ({ onViewDetail, onSuspend }) => {
@@ -80,9 +80,9 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
 
   const filteredCases = useMemo(() => {
     return cases.filter(caseItem => {
-      const matchesSearch = caseItem.borrowerName.includes(searchText) || 
+      const matchesSearch = caseItem.borrowerName.toLowerCase().includes(searchText.toLowerCase()) || 
                           caseItem.phone.includes(searchText) || 
-                          caseItem.id.includes(searchText);
+                          caseItem.id.toLowerCase().includes(searchText.toLowerCase());
       const matchesStage = stageFilter === 'all' || caseItem.stage === stageFilter;
       const matchesStatus = statusFilter === 'all' || caseItem.status === statusFilter;
       const matchesCollector = collectorFilter === 'all' || caseItem.assignedTo === collectorFilter;
@@ -108,7 +108,6 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       return;
     }
 
-    // 模拟指派逻辑
     const updatedCases = cases.map(caseItem => {
       if (selectedCases.includes(caseItem.id)) {
         let newAssignedTo = caseItem.assignedTo;
@@ -116,7 +115,6 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
           const collector = collectors.find(c => c.value === selectedCollector);
           newAssignedTo = collector ? collector.label : newAssignedTo;
         } else if (assignMode === 'team') {
-          // 均分模式：简单轮询分配
           const teamCollectors = collectors.filter(c => c.team === selectedTeam);
           if (teamCollectors.length > 0) {
             const index = selectedCases.indexOf(caseItem.id) % teamCollectors.length;
@@ -148,75 +146,111 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       title: '案件ID',
       dataIndex: 'id',
       key: 'id',
-      width: 100,
+      width: 140,
+      render: (id: string) => (
+        <span style={{ color: '#0d4f3c', fontWeight: '500', fontSize: '13px' }}>{id}</span>
+      ),
     },
     {
-      title: t.borrowerName,
+      title: '借款人',
       dataIndex: 'borrowerName',
       key: 'borrowerName',
-      width: 100,
+      width: 180,
+      render: (name: string) => (
+        <span style={{ color: '#1f2937', fontWeight: '500', fontSize: '13px' }}>{name}</span>
+      ),
     },
     {
       title: '电话',
       dataIndex: 'phone',
       key: 'phone',
-      width: 120,
+      width: 130,
+      render: (phone: string) => (
+        <span style={{ color: '#6b7280', fontSize: '13px' }}>{phone}</span>
+      ),
     },
     {
-      title: t.overdueDays,
+      title: '逾期天数',
       dataIndex: 'overdueDays',
       key: 'overdueDays',
-      width: 80,
+      width: 90,
       render: (days: number) => (
-        <Tag color={days > 30 ? 'red' : days > 15 ? 'orange' : 'blue'}>
+        <Tag 
+          color={days > 60 ? 'red' : days > 30 ? 'orange' : days > 15 ? 'gold' : 'blue'}
+          style={{ fontSize: '12px', fontWeight: '500' }}
+        >
           {days} 天
         </Tag>
       ),
     },
     {
-      title: t.overdueAmount,
+      title: '逾期金额',
       dataIndex: 'amount',
       key: 'amount',
-      width: 100,
-      render: (amount: number) => `¥${amount.toLocaleString()}`,
+      width: 120,
+      render: (amount: number) => (
+        <span style={{ color: '#dc2626', fontWeight: '600', fontSize: '13px' }}>
+          {amount.toLocaleString('id-ID')} IDR
+        </span>
+      ),
     },
     {
-      title: t.stageName,
+      title: '阶段',
       dataIndex: 'stage',
       key: 'stage',
       width: 80,
+      render: (stage: string) => (
+        <Tag 
+          color={stage === 'M0' ? 'blue' : stage === 'M1' ? 'gold' : stage === 'M2' ? 'orange' : stage === 'M3' ? 'red' : 'purple'}
+          style={{ fontSize: '12px', fontWeight: '500' }}
+        >
+          {stage}
+        </Tag>
+      ),
     },
     {
-      title: t.status,
+      title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 80,
+      width: 100,
       render: (status: string) => (
-        <Tag color={status === '待处理' ? 'blue' : status === '处理中' ? 'orange' : 'green'}>
+        <Tag 
+          color={status === 'Open' ? 'green' : status === 'Processing' ? 'orange' : 'blue'}
+          style={{ fontSize: '12px', fontWeight: '500' }}
+        >
           {status}
         </Tag>
       ),
     },
     {
-      title: '分配给',
+      title: '催收员',
       dataIndex: 'assignedTo',
       key: 'assignedTo',
-      width: 100,
+      width: 130,
+      render: (name: string) => (
+        <span style={{ color: '#1f2937', fontSize: '13px' }}>{name}</span>
+      ),
     },
     {
       title: '创建时间',
       dataIndex: 'createTime',
       key: 'createTime',
-      width: 150,
+      width: 160,
+      render: (time: string) => (
+        <span style={{ color: '#6b7280', fontSize: '12px' }}>{time}</span>
+      ),
     },
     {
       title: '最后更新',
       dataIndex: 'lastUpdateTime',
       key: 'lastUpdateTime',
-      width: 150,
+      width: 160,
+      render: (time: string) => (
+        <span style={{ color: '#6b7280', fontSize: '12px' }}>{time}</span>
+      ),
     },
     {
-      title: t.action,
+      title: '操作',
       key: 'action',
       width: 80,
       render: (_, record) => (
@@ -226,6 +260,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             size="small" 
             icon={<EyeOutlined />}
             onClick={() => onViewDetail(record.id)}
+            style={{ color: '#0d4f3c', fontWeight: '500', padding: '0' }}
           >
             详情
           </Button>
@@ -235,15 +270,22 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-        <h2 style={{ margin: 0 }}>案件列表</h2>
+    <div style={{ minWidth: '1200px' }}>
+      {/* 顶部工具栏 */}
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>案件列表</h2>
+          <p style={{ margin: '0', fontSize: '13px', color: '#6b7280' }}>
+            共 {filteredCases.length} 个案件
+          </p>
+        </div>
         <Space size="middle">
           <Button
             type="primary"
             icon={<SwapOutlined />}
             disabled={selectedCases.length === 0}
             onClick={handleAssign}
+            style={{ borderRadius: '8px' }}
           >
             人工指派
           </Button>
@@ -252,54 +294,84 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             icon={<PauseCircleOutlined />}
             disabled={selectedCases.length === 0}
             onClick={() => setSuspendModalVisible(true)}
+            style={{ borderRadius: '8px' }}
           >
             停催
           </Button>
-          <Input
-            placeholder="搜索借款人、电话或案件ID"
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 250 }}
-          />
-          <Select
-            placeholder="筛选状态"
-            value={statusFilter}
-            onChange={setStatusFilter}
-            style={{ width: 120 }}
-            options={[
-              { value: 'all', label: '全部' },
-              { value: '处理中', label: '处理中' },
-              { value: '已完成', label: '已完成' },
-              { value: '已拒绝', label: '已拒绝' },
-            ]}
-          />
-          <Select
-            placeholder="筛选阶段"
-            value={stageFilter}
-            onChange={setStageFilter}
-            style={{ width: 100 }}
-            options={[
-              { value: 'all', label: '全部' },
-              { value: 'M0', label: 'M0' },
-              { value: 'M1', label: 'M1' },
-              { value: 'M2', label: 'M2' },
-              { value: 'M3', label: 'M3' },
-            ]}
-          />
-          <Select
-            placeholder="筛选催收员"
-            value={collectorFilter}
-            onChange={setCollectorFilter}
-            style={{ width: 120 }}
-            options={[
-              { value: 'all', label: '全部' },
-              ...collectors.map(collector => ({ value: collector.value, label: collector.label })),
-            ]}
-          />
+          <div style={{ 
+            position: 'relative',
+            width: '280px'
+          }}>
+            <input
+              type="text"
+              placeholder="搜索借款人、电话或案件ID..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 36px 10px 14px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '13px',
+                backgroundColor: '#f9fafb',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#0d4f3c';
+                e.target.style.backgroundColor = '#ffffff';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#e5e7eb';
+                e.target.style.backgroundColor = '#f9fafb';
+              }}
+            />
+            <SearchOutlined style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <FilterOutlined style={{ color: '#9ca3af' }} />
+            <Select
+              placeholder="状态"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: 120 }}
+              options={[
+                { value: 'all', label: '全部' },
+                { value: 'Open', label: '待处理' },
+                { value: 'Processing', label: '处理中' },
+                { value: 'Completed', label: '已完成' },
+              ]}
+            />
+            <Select
+              placeholder="阶段"
+              value={stageFilter}
+              onChange={setStageFilter}
+              style={{ width: 100 }}
+              options={[
+                { value: 'all', label: '全部' },
+                { value: 'M0', label: 'M0' },
+                { value: 'M1', label: 'M1' },
+                { value: 'M2', label: 'M2' },
+                { value: 'M3', label: 'M3' },
+                { value: 'M4+', label: 'M4+' },
+              ]}
+            />
+            <Select
+              placeholder="催收员"
+              value={collectorFilter}
+              onChange={setCollectorFilter}
+              style={{ width: 140 }}
+              options={[
+                { value: 'all', label: '全部' },
+                ...collectors.map(collector => ({ value: collector.label, label: collector.label })),
+              ]}
+            />
+          </div>
         </Space>
       </div>
-      <Card>
+
+      {/* 案件表格 */}
+      <Card style={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflowX: 'auto' }}>
         <Table
           columns={columns}
           dataSource={filteredCases}
@@ -310,11 +382,13 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total) => `共 ${total} 条`,
           }}
-          size="small"
+          size="middle"
           rowSelection={{
             selectedRowKeys: selectedCases,
             onChange: (selectedRowKeys) => setSelectedCases(selectedRowKeys as string[]),
           }}
+          style={{ marginTop: '16px' }}
+          scroll={{ x: 1400 }}
         />
       </Card>
 
@@ -325,6 +399,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
         onOk={handleAssignConfirm}
         onCancel={() => setAssignModalVisible(false)}
         width={500}
+        style={{ borderRadius: '12px' }}
       >
         <Form layout="vertical">
           <Form.Item label="指派模式">
@@ -367,15 +442,15 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
                 onChange={setSelectedCollector}
                 options={collectors.map(collector => ({
                   value: collector.value,
-                  label: `${collector.label} (${teams.find(t => t.value === collector.team)?.label})`,
+                  label: `${collector.label}`,
                 }))}
               />
             </Form.Item>
           )}
 
           <Form.Item>
-            <div style={{ color: '#666' }}>
-              已选择 {selectedCases.length} 个案件
+            <div style={{ color: '#6b7280', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+              已选择 <strong style={{ color: '#0d4f3c' }}>{selectedCases.length}</strong> 个案件
             </div>
           </Form.Item>
         </Form>
@@ -395,7 +470,6 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             return;
           }
           
-          // 从案件列表移除
           setCases(cases.filter(c => !selectedCases.includes(c.id)));
           onSuspend(selectedCases);
           setSuspendModalVisible(false);
@@ -412,6 +486,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
           setValidityDate(null);
         }}
         width={600}
+        style={{ borderRadius: '12px' }}
       >
         <Form layout="vertical">
           <Form.Item label="停催原因 *">
@@ -437,13 +512,13 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
               options={forbiddenFeatures}
               value={selectedFeatures}
               onChange={setSelectedFeatures}
-              style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}
+              style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}
             />
           </Form.Item>
 
           <Form.Item>
-            <div style={{ color: '#666' }}>
-              已选择 {selectedCases.length} 个案件
+            <div style={{ color: '#6b7280', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+              已选择 <strong style={{ color: '#0d4f3c' }}>{selectedCases.length}</strong> 个案件
             </div>
           </Form.Item>
         </Form>
