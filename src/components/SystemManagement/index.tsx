@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Dropdown } from 'antd';
-import { UserOutlined, TeamOutlined, CalendarOutlined, SettingOutlined, DashboardOutlined, FileSearchOutlined, DownOutlined, KeyOutlined, DollarOutlined, FileTextOutlined, PartitionOutlined, ScheduleOutlined, SplitCellsOutlined, PauseCircleOutlined } from '@ant-design/icons';
+import { UserOutlined, TeamOutlined, CalendarOutlined, SettingOutlined, DashboardOutlined, FileSearchOutlined, DownOutlined, KeyOutlined, DollarOutlined, FileTextOutlined, PartitionOutlined, ScheduleOutlined, SplitCellsOutlined, PauseCircleOutlined, FileProtectOutlined } from '@ant-design/icons';
 import AccountManagement from './AccountManagement';
 import OrganizationStructure from './OrganizationStructure';
 import StageConfig from '../StageConfig';
@@ -10,6 +10,7 @@ import CaseDetail from '../CaseDetail';
 import RoleManagement from './RoleManagement';
 import RecoveryList from '../RecoveryList';
 import ReductionRuleConfig from './ReductionRuleConfig';
+import ReductionReview from '../ReductionReview';
 import ScheduleManagement from './ScheduleManagement';
 import AutoAllocationManagement from './AutoAllocationManagement';
 import SuspendedCases, { SuspendedCase } from './SuspendedCases';
@@ -17,7 +18,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 
 const { Content, Sider } = Layout;
 
-type MenuItem = 'dashboard' | 'caseList' | 'suspendedCases' | 'recovery' | 'account' | 'organization' | 'stage' | 'role' | 'reduction' | 'schedule' | 'autoAllocation';
+type MenuItem = 'dashboard' | 'caseList' | 'suspendedCases' | 'recovery' | 'account' | 'organization' | 'stage' | 'role' | 'reduction' | 'reductionReview' | 'schedule' | 'autoAllocation';
 
 const SystemManagement: React.FC = () => {
   const [current, setCurrent] = useState<MenuItem>('dashboard');
@@ -81,6 +82,8 @@ const SystemManagement: React.FC = () => {
         return <RoleManagement />;
       case 'reduction':
         return <ReductionRuleConfig />;
+      case 'reductionReview':
+        return <ReductionReview />;
       case 'schedule':
         return <ScheduleManagement />;
       case 'autoAllocation':
@@ -161,6 +164,11 @@ const SystemManagement: React.FC = () => {
                   key: 'reduction',
                   icon: <DollarOutlined />,
                   label: '减免规则',
+                },
+                {
+                  key: 'reductionReview',
+                  icon: <FileProtectOutlined />,
+                  label: '减免审核',
                 },
               ],
             },

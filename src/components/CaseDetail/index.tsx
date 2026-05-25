@@ -177,6 +177,17 @@ interface Activity {
   icon: React.ReactNode;
 }
 
+// 案件流转记录
+interface CaseTransferRecord {
+  id: string;
+  transferTime: string;
+  fromCollector: string;
+  toCollector: string;
+  reason: string;
+  transferType: 'auto' | 'manual' | 'system';
+  operator?: string;
+}
+
 const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [detailModalActiveTab, setDetailModalActiveTab] = useState<string>('personal');
@@ -279,6 +290,53 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     { date: '05 May 2024', collector: 'Dewi Anggraini', method: 'Call', result: 'No Answer', note: 'Called 3 times, no answer' },
   ];
 
+  // 案件流转记录数据
+  const transferRecords: CaseTransferRecord[] = [
+    { 
+      id: 'TR001', 
+      transferTime: '10 May 2024, 09:30', 
+      fromCollector: 'Budi Santoso', 
+      toCollector: 'Dewi Anggraini', 
+      reason: 'Workload rebalancing - collector rotation',
+      transferType: 'manual',
+      operator: 'Ahmad Rizal (Supervisor)'
+    },
+    { 
+      id: 'TR002', 
+      transferTime: '25 Apr 2024, 14:15', 
+      fromCollector: 'Siti Aminah', 
+      toCollector: 'Budi Santoso', 
+      reason: 'Collector on leave - temporary assignment',
+      transferType: 'manual',
+      operator: 'Ahmad Rizal (Supervisor)'
+    },
+    { 
+      id: 'TR003', 
+      transferTime: '15 Apr 2024, 08:00', 
+      fromCollector: 'System', 
+      toCollector: 'Siti Aminah', 
+      reason: 'New case assignment - auto allocation',
+      transferType: 'auto'
+    },
+    { 
+      id: 'TR004', 
+      transferTime: '01 Apr 2024, 16:45', 
+      fromCollector: 'Dewi Anggraini', 
+      toCollector: 'System', 
+      reason: 'Case returned to pool - performance issue',
+      transferType: 'system'
+    },
+    { 
+      id: 'TR005', 
+      transferTime: '20 Mar 2024, 11:20', 
+      fromCollector: 'Rudi Hartono', 
+      toCollector: 'Dewi Anggraini', 
+      reason: 'Specialist assignment - difficult case',
+      transferType: 'manual',
+      operator: 'Ahmad Rizal (Supervisor)'
+    },
+  ];
+
   // 账单数据 - 模拟2笔6期的订单
   const bills: Bill[] = [
     // 订单1: ORD001 (6期)
@@ -319,6 +377,42 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     { id: 'C004', name: 'ANNA SMITH', relationship: 'Emergency', phoneNumber: '0813 9876 5432', type: 'mobile', source: 'Application Form', createdAt: '12 Jan 2024' },
   ]);
 
+  // 减免申请记录类型
+  type ReductionApplicationStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+
+  interface ReductionApplication {
+    id: string;
+    applicationId: string;
+    billIds: string[];
+    totalAmount: number;
+    requestedReduction: number;
+    approvedReduction: number;
+    reason: string;
+    status: ReductionApplicationStatus;
+    applyTime: string;
+    reviewer?: string;
+    reviewTime?: string;
+    reviewComment?: string;
+    paymentCode?: string;
+    paymentTime?: string;
+    completedTime?: string;
+  }
+
+  // 减免申请记录（模拟）
+  const [reductionApplications, setReductionApplications] = useState<ReductionApplication[]>([
+    {
+      id: 'RA001',
+      applicationId: 'RED-20240508-001',
+      billIds: ['B005', 'B006'],
+      totalAmount: 4400000,
+      requestedReduction: 660000,
+      approvedReduction: 0,
+      reason: 'Customer requested reduction due to financial hardship',
+      status: 'pending',
+      applyTime: '08 May 2024, 14:20',
+    },
+  ]);
+
   // 减免规则（模拟）
   const reductionRules = {
     minOverdueDays: 30,
@@ -329,6 +423,9 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
 
   // 请求减免金额
   const [requestedReductionAmount, setRequestedReductionAmount] = useState<number>(0);
+  
+  // 减免申请理由
+  const [reductionReason, setReductionReason] = useState<string>('');
 
   // 状态管理
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -450,7 +547,28 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
       return;
     }
     
-    message.success(`减免申请提交成功！最大可减免金额: ${formatIDR(maxReductionAmount)} IDR`);
+    if (!reductionReason.trim()) {
+      message.error('请填写减免申请理由');
+      return;
+    }
+    
+    // 创建新的减免申请记录
+    const newApplication: ReductionApplication = {
+      id: `RA${Date.now()}`,
+      applicationId: `RED-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`,
+      billIds: [...selectedBills],
+      totalAmount: selectedBillsTotal,
+      requestedReduction: maxReductionAmount,
+      approvedReduction: 0,
+      reason: reductionReason,
+      status: 'pending',
+      applyTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + 
+                 new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    };
+    
+    setReductionApplications(prev => [newApplication, ...prev]);
+    setReductionReason('');
+    message.success(`减免申请提交成功！申请编号: ${newApplication.applicationId}`);
     setReductionModalVisible(false);
   };
 
@@ -892,7 +1010,138 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
         </div>
       ),
     },
-  ], [activities, caseSummary, images, paymentHistory, contacts]);
+    {
+      key: 'transfer',
+      label: 'Transfer Records',
+      children: (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', margin: 0 }}>Case Transfer History</h3>
+            <Tag color="blue">{transferRecords.length} Records</Tag>
+          </div>
+          <Table
+            dataSource={transferRecords}
+            columns={[
+              { 
+                title: 'Transfer Time', 
+                dataIndex: 'transferTime', 
+                key: 'transferTime',
+                width: '180px',
+                render: (time: string) => (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ClockCircleOutlined style={{ color: '#6b7280' }} />
+                    {time}
+                  </span>
+                )
+              },
+              { 
+                title: 'From', 
+                dataIndex: 'fromCollector', 
+                key: 'fromCollector',
+                width: '150px',
+                render: (collector: string) => (
+                  <span style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    color: collector === 'System' ? '#6b7280' : '#1f2937',
+                    fontWeight: collector === 'System' ? 'normal' : '500'
+                  }}>
+                    <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: collector === 'System' ? '#9ca3af' : '#ef4444' }} />
+                    {collector}
+                  </span>
+                )
+              },
+              { 
+                title: 'To', 
+                dataIndex: 'toCollector', 
+                key: 'toCollector',
+                width: '150px',
+                render: (collector: string) => (
+                  <span style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    color: collector === 'System' ? '#6b7280' : '#1f2937',
+                    fontWeight: collector === 'System' ? 'normal' : '500'
+                  }}>
+                    <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: collector === 'System' ? '#9ca3af' : '#22c55e' }} />
+                    {collector}
+                  </span>
+                )
+              },
+              { 
+                title: 'Reason', 
+                dataIndex: 'reason', 
+                key: 'reason',
+                render: (reason: string) => (
+                  <span style={{ color: '#4b5563' }}>{reason}</span>
+                )
+              },
+              { 
+                title: 'Type', 
+                dataIndex: 'transferType', 
+                key: 'transferType',
+                width: '120px',
+                render: (type: string) => {
+                  const typeConfig: Record<string, { color: string; label: string }> = {
+                    auto: { color: 'blue', label: 'Auto' },
+                    manual: { color: 'orange', label: 'Manual' },
+                    system: { color: 'purple', label: 'System' },
+                  };
+                  const config = typeConfig[type] || { color: 'default', label: type };
+                  return <Tag color={config.color}>{config.label}</Tag>;
+                }
+              },
+              { 
+                title: 'Operator', 
+                dataIndex: 'operator', 
+                key: 'operator',
+                width: '180px',
+                render: (operator: string | undefined) => operator ? (
+                  <span style={{ color: '#6b7280', fontSize: '13px' }}>{operator}</span>
+                ) : (
+                  <span style={{ color: '#9ca3af', fontSize: '13px' }}>-</span>
+                )
+              },
+            ]}
+            pagination={{ pageSize: 10 }}
+            size="middle"
+            rowKey="id"
+          />
+          
+          {/* 流转统计 */}
+          <div style={{ marginTop: '24px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '10px' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '12px' }}>Transfer Statistics</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+              <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#fff', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '600', color: '#0d4f3c' }}>{transferRecords.length}</div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>Total Transfers</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#fff', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '600', color: '#22c55e' }}>
+                  {transferRecords.filter(r => r.transferType === 'auto').length}
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>Auto Assignment</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#fff', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '600', color: '#f97316' }}>
+                  {transferRecords.filter(r => r.transferType === 'manual').length}
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>Manual Transfer</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#fff', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '600', color: '#8b5cf6' }}>
+                  {transferRecords.filter(r => r.transferType === 'system').length}
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>System Action</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+  ], [activities, caseSummary, images, paymentHistory, contacts, transferRecords]);
 
   return (
     <div style={{ width: '100%', overflowX: 'auto' }}>
@@ -1348,6 +1597,115 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
             </div>
           )}
         </div>
+
+        {/* 减免申请记录 */}
+        {reductionApplications.length > 0 && (
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <FileTextOutlined style={{ color: '#0d4f3c' }} />
+              <h4 style={{ margin: '0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Reduction Applications</h4>
+            </div>
+            <Table
+              dataSource={reductionApplications}
+              columns={[
+                { 
+                  title: 'Application ID', 
+                  dataIndex: 'applicationId', 
+                  key: 'applicationId',
+                  width: '180px',
+                  render: (id: string) => (
+                    <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#0d4f3c' }}>{id}</span>
+                  )
+                },
+                { 
+                  title: 'Apply Time', 
+                  dataIndex: 'applyTime', 
+                  key: 'applyTime',
+                  width: '150px',
+                },
+                { 
+                  title: 'Bills', 
+                  dataIndex: 'billIds', 
+                  key: 'billIds',
+                  width: '80px',
+                  render: (billIds: string[]) => `${billIds.length} bills`
+                },
+                { 
+                  title: 'Total Amount', 
+                  dataIndex: 'totalAmount', 
+                  key: 'totalAmount',
+                  width: '140px',
+                  align: 'right',
+                  render: (amount: number) => <span style={{ fontWeight: '500' }}>{formatIDR(amount)} IDR</span>
+                },
+                { 
+                  title: 'Requested', 
+                  dataIndex: 'requestedReduction', 
+                  key: 'requestedReduction',
+                  width: '130px',
+                  align: 'right',
+                  render: (amount: number) => (
+                    <span style={{ color: '#f97316', fontWeight: '500' }}>-{formatIDR(amount)} IDR</span>
+                  )
+                },
+                { 
+                  title: 'Approved', 
+                  dataIndex: 'approvedReduction', 
+                  key: 'approvedReduction',
+                  width: '130px',
+                  align: 'right',
+                  render: (amount: number) => (
+                    <span style={{ color: amount > 0 ? '#22c55e' : '#9ca3af', fontWeight: '500' }}>
+                      {amount > 0 ? `-${formatIDR(amount)} IDR` : '-'}
+                    </span>
+                  )
+                },
+                { 
+                  title: 'Status', 
+                  dataIndex: 'status', 
+                  key: 'status',
+                  width: '100px',
+                  render: (status: ReductionApplicationStatus) => {
+                    const statusConfig: Record<ReductionApplicationStatus, { color: string; label: string }> = {
+                      pending: { color: 'orange', label: 'Pending' },
+                      approved: { color: 'blue', label: 'Approved' },
+                      rejected: { color: 'red', label: 'Rejected' },
+                      completed: { color: 'green', label: 'Completed' },
+                    };
+                    const config = statusConfig[status];
+                    return <Tag color={config.color}>{config.label}</Tag>;
+                  }
+                },
+                { 
+                  title: 'Payment Code', 
+                  dataIndex: 'paymentCode', 
+                  key: 'paymentCode',
+                  width: '180px',
+                  render: (code: string | undefined) => code ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: '500' }}>{code}</span>
+                      <Button 
+                        type="link" 
+                        size="small"
+                        onClick={() => {
+                          navigator.clipboard.writeText(code);
+                          message.success('还款码已复制');
+                        }}
+                        style={{ padding: '0', height: 'auto', color: '#0d4f3c' }}
+                      >
+                        <CopyOutlined style={{ fontSize: '12px' }} />
+                      </Button>
+                    </span>
+                  ) : (
+                    <span style={{ color: '#9ca3af', fontSize: '12px' }}>-</span>
+                  )
+                },
+              ]}
+              pagination={false}
+              size="middle"
+            />
+          </div>
+        )}
       </Card>
 
       {/* 标签页内容 */}
@@ -1730,11 +2088,20 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
 
           {/* Reason */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Reason</label>
+            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Reason <span style={{ color: '#ef4444' }}>*</span></label>
             <textarea 
               placeholder="Enter reason for reduction request..." 
               style={{ width: '100%', height: '80px', borderRadius: '8px', padding: '12px', border: '1px solid #d1d5db', fontSize: '13px' }}
+              value={reductionReason}
+              onChange={(e) => setReductionReason(e.target.value)}
             />
+          </div>
+
+          {/* Application Notice */}
+          <div style={{ backgroundColor: '#eff6ff', borderRadius: '8px', padding: '12px', border: '1px solid #bfdbfe' }}>
+            <div style={{ fontSize: '12px', color: '#1e40af' }}>
+              <strong>Notice:</strong> After submission, the application will be reviewed by the supervisor. Once approved, a payment code will be generated for the customer.
+            </div>
           </div>
         </div>
       </Modal>
