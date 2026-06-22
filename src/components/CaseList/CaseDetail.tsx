@@ -252,16 +252,16 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ visible, caseData, onClose }) =
                       </Descriptions>
                     </Card>
                     <Card>
-                      <h3>账单信息</h3>
+                      <h3>{t.billInformation}</h3>
                       <Table
                         dataSource={billInfo}
                         columns={[
-                          { title: '账单ID', dataIndex: 'billId', key: 'billId' },
-                          { title: '订单ID', dataIndex: 'orderId', key: 'orderId' },
-                          { title: '账单金额', dataIndex: 'amount', key: 'amount', render: (amount: number) => `¥${amount.toLocaleString()}` },
-                          { title: '到期日期', dataIndex: 'dueDate', key: 'dueDate' },
-                          { title: '已还金额', dataIndex: 'paidAmount', key: 'paidAmount', render: (amount: number) => `¥${amount.toLocaleString()}` },
-                          { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => <Tag color="red">{status}</Tag> },
+                          { title: t.billId, dataIndex: 'billId', key: 'billId' },
+                          { title: t.orderId, dataIndex: 'orderId', key: 'orderId' },
+                          { title: t.billAmount, dataIndex: 'amount', key: 'amount', render: (amount: number) => `¥${amount.toLocaleString()}` },
+                          { title: t.dueDate, dataIndex: 'dueDate', key: 'dueDate' },
+                          { title: t.paidAmount, dataIndex: 'paidAmount', key: 'paidAmount', render: (amount: number) => `¥${amount.toLocaleString()}` },
+                          { title: t.status, dataIndex: 'status', key: 'status', render: (status: string) => <Tag color="red">{status}</Tag> },
                         ]}
                         rowKey="billId"
                         size="small"
@@ -273,21 +273,21 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ visible, caseData, onClose }) =
               },
               {
                 key: 'va',
-                label: 'VA码管理',
+                label: t.vaManagement,
                 children: (
                   <>
                     <Card style={{ marginBottom: 16 }}>
-                      <h3>当前有效VA码</h3>
+                      <h3>{t.validVA}</h3>
                       <Table
                         dataSource={vaInfo.filter(va => va.status === '有效')}
                         columns={[
-                          { title: 'VA ID', dataIndex: 'vaId', key: 'vaId' },
-                          { title: '银行', dataIndex: 'bank', key: 'bank' },
-                          { title: 'VA号码', dataIndex: 'vaNumber', key: 'vaNumber' },
-                          { title: '金额', dataIndex: 'amount', key: 'amount', render: (amount: number) => `¥${amount.toLocaleString()}` },
-                          { title: '创建时间', dataIndex: 'createTime', key: 'createTime' },
-                          { title: '过期时间', dataIndex: 'expireTime', key: 'expireTime' },
-                          { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => <Tag color="green">{status}</Tag> },
+                          { title: t.vaId, dataIndex: 'vaId', key: 'vaId' },
+                          { title: t.bank, dataIndex: 'bank', key: 'bank' },
+                          { title: t.vaNumber, dataIndex: 'vaNumber', key: 'vaNumber' },
+                          { title: t.billAmount, dataIndex: 'amount', key: 'amount', render: (amount: number) => `¥${amount.toLocaleString()}` },
+                          { title: t.createTime, dataIndex: 'createTime', key: 'createTime' },
+                          { title: t.expireTime, dataIndex: 'expireTime', key: 'expireTime' },
+                          { title: t.status, dataIndex: 'status', key: 'status', render: (status: string) => <Tag color="green">{status}</Tag> },
                         ]}
                         rowKey="vaId"
                         size="small"

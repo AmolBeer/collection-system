@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Table, Button, Space, Input, Tag, message, Modal } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export interface SuspendedCase {
   id: string;
@@ -45,6 +46,7 @@ const SuspendedCases: React.FC<{ onResume: (caseIds: string[]) => void }> = ({ o
   const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const { t } = useLanguage();
 
   const filteredCases = cases.filter(caseItem => 
     caseItem.caseId.includes(searchText) || 
@@ -54,7 +56,7 @@ const SuspendedCases: React.FC<{ onResume: (caseIds: string[]) => void }> = ({ o
 
   const handleResume = () => {
     if (selectedCases.length === 0) {
-      message.error('请选择要恢复的案件');
+      message.error(t.pleaseSelectCasesToAssign);
       return;
     }
     setConfirmModalVisible(true);
@@ -69,36 +71,31 @@ const SuspendedCases: React.FC<{ onResume: (caseIds: string[]) => void }> = ({ o
     setCases(cases.filter(c => !selectedCases.includes(c.id)));
     setConfirmModalVisible(false);
     setSelectedCases([]);
-    message.success(`成功恢复 ${selectedCases.length} 个案件`);
+    message.success(t.successfullyAssigned.replace('{count}', selectedCases.length.toString()));
     onResume(caseIdsToResume);
   };
 
   const columns: ColumnsType<SuspendedCase> = [
     {
-      type: 'checkbox',
-      key: 'selection',
-      width: 50,
-    },
-    {
-      title: '案件号',
+      title: t.caseId,
       dataIndex: 'caseId',
       key: 'caseId',
       width: 120,
     },
     {
-      title: '借款人',
+      title: t.borrowerName,
       dataIndex: 'borrowerName',
       key: 'borrowerName',
       width: 100,
     },
     {
-      title: '电话',
+      title: t.phone,
       dataIndex: 'phone',
       key: 'phone',
       width: 120,
     },
     {
-      title: '停催原因',
+      title: t.suspensionReason,
       dataIndex: 'reason',
       key: 'reason',
       width: 100,
@@ -109,26 +106,26 @@ const SuspendedCases: React.FC<{ onResume: (caseIds: string[]) => void }> = ({ o
       ),
     },
     {
-      title: '操作人',
+      title: t.operator,
       dataIndex: 'operator',
       key: 'operator',
       width: 100,
     },
     {
-      title: '停催到期时间',
+      title: t.endTime,
       dataIndex: 'endTime',
       key: 'endTime',
       width: 160,
     },
     {
-      title: '禁止功能',
+      title: t.forbiddenFeatures,
       dataIndex: 'forbiddenFeatures',
       key: 'forbiddenFeatures',
       width: 200,
       render: (features: string[]) => (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {features.map((feature, index) => (
-            <Tag key={index} color="red" size="small">
+            <Tag key={index} color="red">
               {feature}
             </Tag>
           ))}
@@ -136,7 +133,7 @@ const SuspendedCases: React.FC<{ onResume: (caseIds: string[]) => void }> = ({ o
       ),
     },
     {
-      title: '停催时间',
+      title: t.suspensionTime,
       dataIndex: 'createTime',
       key: 'createTime',
       width: 160,
@@ -194,13 +191,13 @@ const SuspendedCases: React.FC<{ onResume: (caseIds: string[]) => void }> = ({ o
       />
 
       <Modal
-        title="确认恢复"
+        title={t.confirm}
         open={confirmModalVisible}
         onOk={handleConfirmResume}
         onCancel={() => setConfirmModalVisible(false)}
       >
-        <p>确定要恢复选中的 {selectedCases.length} 个案件吗？</p>
-        <p>恢复后案件将回到案件列表，所有限制将被解除。</p>
+        <p>{t.confirmRestoreCases.replace('{count}', selectedCases.length.toString())}</p>
+        <p>{t.restoreTip}</p>
       </Modal>
     </div>
   );

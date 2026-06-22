@@ -144,13 +144,13 @@ const RecoveryList: React.FC = () => {
 
   const columns: ColumnsType<Recovery> = [
     {
-      title: '回收ID',
+      title: t.recoveryId,
       dataIndex: 'id',
       key: 'id',
       width: 100,
     },
     {
-      title: '案件ID',
+      title: t.caseNo,
       dataIndex: 'caseId',
       key: 'caseId',
       width: 100,
@@ -162,64 +162,64 @@ const RecoveryList: React.FC = () => {
       width: 100,
     },
     {
-      title: '电话',
+      title: t.phone,
       dataIndex: 'phone',
       key: 'phone',
       width: 120,
     },
     {
-      title: '原始金额',
+      title: t.originalAmount,
       dataIndex: 'originalAmount',
       key: 'originalAmount',
-      width: 100,
-      render: (amount: number) => `¥${amount.toLocaleString()}`,
+      width: 120,
+      render: (amount: number) => `${amount.toLocaleString('id-ID')} IDR`,
     },
     {
-      title: '回收金额',
+      title: t.recoveredAmount,
       dataIndex: 'recoveredAmount',
       key: 'recoveredAmount',
-      width: 100,
-      render: (amount: number) => `¥${amount.toLocaleString()}`,
+      width: 130,
+      render: (amount: number) => `${amount.toLocaleString('id-ID')} IDR`,
     },
     {
-      title: '回收率',
+      title: t.recoveryRate,
       dataIndex: 'recoveredAmount',
       key: 'recoveryRate',
-      width: 80,
+      width: 100,
       render: (recoveredAmount: number, record: Recovery) => {
         const rate = ((recoveredAmount / record.originalAmount) * 100).toFixed(2);
         return `${rate}%`;
       },
     },
     {
-      title: '回收日期',
+      title: t.recoveryDate,
       dataIndex: 'recoveryDate',
       key: 'recoveryDate',
-      width: 100,
+      width: 120,
     },
     {
-      title: '催收员',
+      title: t.collector,
       dataIndex: 'collector',
       key: 'collector',
-      width: 100,
+      width: 120,
     },
     {
-      title: '所属团队',
+      title: t.team,
       dataIndex: 'team',
       key: 'team',
-      width: 100,
+      width: 120,
     },
     {
-      title: '回收方式',
+      title: t.recoveryMethod,
       dataIndex: 'recoveryMethod',
       key: 'recoveryMethod',
-      width: 100,
+      width: 120,
       render: (method: string) => (
         <Tag color="green">{method}</Tag>
       ),
     },
     {
-      title: '备注',
+      title: t.remark,
       dataIndex: 'notes',
       key: 'notes',
       ellipsis: true,
@@ -229,42 +229,42 @@ const RecoveryList: React.FC = () => {
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-        <h2 style={{ margin: 0 }}>催回列表</h2>
+        <h2 style={{ margin: 0 }}>{t.recoveryList}</h2>
         <Space size="middle">
           <Input
-            placeholder="搜索借款人、电话或案件ID"
+            placeholder={t.searchPlaceholder}
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 200 }}
+            style={{ width: 220 }}
           />
           <Select
-            placeholder="选择团队"
+            placeholder={t.selectTeam}
             value={teamFilter}
             onChange={setTeamFilter}
             style={{ width: 120 }}
             options={[
-              { value: 'all', label: '全部' },
+              { value: 'all', label: t.all },
               ...teams,
             ]}
           />
           <Select
-            placeholder="选择催收员"
+            placeholder={t.selectCollector}
             value={collectorFilter}
             onChange={setCollectorFilter}
             style={{ width: 120 }}
             options={[
-              { value: 'all', label: '全部' },
+              { value: 'all', label: t.all },
               ...collectors,
             ]}
           />
           <DatePicker
-            placeholder="开始日期"
+            placeholder={t.startDate}
             onChange={(date) => setStartDate(date ? date.format('YYYY-MM-DD') : '')}
             style={{ width: 150 }}
           />
           <DatePicker
-            placeholder="结束日期"
+            placeholder={t.endDate}
             onChange={(date) => setEndDate(date ? date.format('YYYY-MM-DD') : '')}
             style={{ width: 150 }}
           />
@@ -276,30 +276,30 @@ const RecoveryList: React.FC = () => {
         <Card>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1890ff' }}>{summaryData.totalCases}</div>
-            <div style={{ color: '#666', marginTop: 4 }}>回收案件数</div>
+            <div style={{ color: '#666', marginTop: 4 }}>{t.totalCases}</div>
           </div>
         </Card>
         <Card>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#fa8c16' }}>¥{summaryData.totalOriginalAmount.toLocaleString()}</div>
-            <div style={{ color: '#666', marginTop: 4 }}>原始金额</div>
+            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#fa8c16' }}>{summaryData.totalOriginalAmount.toLocaleString('id-ID')} IDR</div>
+            <div style={{ color: '#666', marginTop: 4 }}>{t.originalAmount}</div>
           </div>
         </Card>
         <Card>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>¥{summaryData.totalRecoveredAmount.toLocaleString()}</div>
-            <div style={{ color: '#666', marginTop: 4 }}>回收金额</div>
+            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>{summaryData.totalRecoveredAmount.toLocaleString('id-ID')} IDR</div>
+            <div style={{ color: '#666', marginTop: 4 }}>{t.recoveredAmount}</div>
           </div>
         </Card>
         <Card>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>
-              {summaryData.totalOriginalAmount > 0 
-                ? ((summaryData.totalRecoveredAmount / summaryData.totalOriginalAmount) * 100).toFixed(2) 
+              {summaryData.totalOriginalAmount > 0
+                ? ((summaryData.totalRecoveredAmount / summaryData.totalOriginalAmount) * 100).toFixed(2)
                 : '0.00'
               }%
             </div>
-            <div style={{ color: '#666', marginTop: 4 }}>总回收率</div>
+            <div style={{ color: '#666', marginTop: 4 }}>{t.totalRecoveryRate}</div>
           </div>
         </Card>
       </div>
@@ -313,7 +313,7 @@ const RecoveryList: React.FC = () => {
             pageSize: 10,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50', '100'],
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => `${t.total} ${total}`,
           }}
           size="small"
         />

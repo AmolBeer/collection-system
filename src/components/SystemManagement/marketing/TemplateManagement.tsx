@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, message, Space, Tag, Popconfirm, Card } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Space, Tag, Popconfirm, Card, Select, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, StopOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, StopOutlined, CodeOutlined } from '@ant-design/icons';
+import { useLanguage } from '../../../i18n/LanguageContext';
+
+const templateParams = [
+  { value: '{name}', label: '姓名', description: '客户姓名' },
+  { value: '{gender}', label: '性别', description: '客户性别' },
+  { value: '{billDueDate}', label: '账单到期日', description: '账单到期日期' },
+  { value: '{overdueDays}', label: '逾期天数', description: '逾期天数（支持负数）' },
+  { value: '{totalAmount}', label: '应还总额', description: '应还总金额' },
+  { value: '{principal}', label: '本金', description: '待还本金' },
+  { value: '{interest}', label: '利息', description: '待还利息' },
+  { value: '{penalty}', label: '罚息', description: '待还罚息' },
+  { value: '{serviceFee}', label: '服务费', description: '待还服务费' },
+  { value: '{productName}', label: '产品名称', description: '贷款产品名称' },
+];
 
 interface SMSTemplate {
   id: string;
@@ -29,6 +43,7 @@ const defaultTemplates: SMSTemplate[] = [
 ];
 
 const TemplateManagement: React.FC = () => {
+  const { t } = useLanguage();
   const [templates, setTemplates] = useState<SMSTemplate[]>(defaultTemplates);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<SMSTemplate | null>(null);
@@ -81,12 +96,12 @@ const TemplateManagement: React.FC = () => {
 
   const columns: ColumnsType<SMSTemplate> = [
     {
-      title: '模板名称',
+      title: t.templateName,
       dataIndex: 'templateName',
       key: 'templateName',
     },
     {
-      title: '短信内容',
+      title: t.smsContent,
       dataIndex: 'content',
       key: 'content',
       ellipsis: true,
@@ -97,24 +112,24 @@ const TemplateManagement: React.FC = () => {
       ),
     },
     {
-      title: '创建时间',
+      title: t.createTime,
       dataIndex: 'createTime',
       key: 'createTime',
       width: 180,
     },
     {
-      title: '状态',
+      title: t.status,
       dataIndex: 'status',
       key: 'status',
       width: 100,
       render: (status: string) => (
         <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status === 'active' ? '启用' : '禁用'}
+          {status === 'active' ? t.enabled : t.disabled}
         </Tag>
       ),
     },
     {
-      title: '操作',
+      title: t.action,
       key: 'action',
       width: 280,
       render: (_, record) => (
@@ -125,7 +140,7 @@ const TemplateManagement: React.FC = () => {
             icon={record.status === 'active' ? <StopOutlined /> : <CheckCircleOutlined />}
             onClick={() => handleToggleStatus(record.id)}
           >
-            {record.status === 'active' ? '禁用' : '启用'}
+            {record.status === 'active' ? t.disabled : t.enabled}
           </Button>
           <Button 
             type="link" 
@@ -133,13 +148,13 @@ const TemplateManagement: React.FC = () => {
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
-            编辑
+            {t.edit}
           </Button>
           <Popconfirm
-            title="确定要删除该模板吗？"
+            title={t.confirmDelete}
             onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okText={t.yes}
+            cancelText={t.no}
           >
             <Button 
               type="link" 
@@ -147,7 +162,7 @@ const TemplateManagement: React.FC = () => {
               danger 
               icon={<DeleteOutlined />}
             >
-              删除
+              {t.delete}
             </Button>
           </Popconfirm>
         </Space>
@@ -157,14 +172,13 @@ const TemplateManagement: React.FC = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>短信模板管理</h3>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          创建模板
+          {t.createTemplate}
         </Button>
       </div>
       
-      <Card bordered={false}>
+      <Card variant="borderless">
         <Table
           columns={columns}
           dataSource={templates}
@@ -178,7 +192,7 @@ const TemplateManagement: React.FC = () => {
       </Card>
       
       <Modal
-        title={editingTemplate ? '编辑模板' : '创建模板'}
+        title={editingTemplate ? t.editTemplate : t.createTemplate}
         open={modalVisible}
         onOk={handleSave}
         onCancel={() => setModalVisible(false)}
@@ -187,19 +201,48 @@ const TemplateManagement: React.FC = () => {
         <Form form={form} layout="vertical">
           <Form.Item
             name="templateName"
-            label="模板名称"
-            rules={[{ required: true, message: '请输入模板名称' }]}
+            label={t.templateName}
+            rules={[{ required: true, message: t.pleaseInputTemplateName }]}
           >
-            <Input placeholder="请输入模板名称" />
+            <Input placeholder={t.pleaseInputTemplateName} />
           </Form.Item>
           <Form.Item
             name="content"
-            label="短信内容"
-            rules={[{ required: true, message: '请输入短信内容' }]}
+            label={t.smsContent}
+            rules={[{ required: true, message: t.pleaseInputContent }]}
           >
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ fontSize: 12, color: '#666', marginRight: 8 }}>可用参数：</span>
+              <Space wrap>
+                {templateParams.map((param) => (
+                  <Tooltip key={param.value} title={param.description}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<CodeOutlined />}
+                      onClick={() => {
+                        const currentValue = form.getFieldValue('content') || '';
+                        form.setFieldsValue({
+                          content: currentValue + param.value,
+                        });
+                      }}
+                      style={{
+                        padding: '2px 8px',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: 4,
+                        fontSize: 12,
+                        color: '#1890ff',
+                      }}
+                    >
+                      {param.label}
+                    </Button>
+                  </Tooltip>
+                ))}
+              </Space>
+            </div>
             <Input.TextArea 
               rows={4} 
-              placeholder="请输入短信内容，支持变量如：{name}、{amount}、{date}等"
+              placeholder={t.pleaseInputContent}
             />
           </Form.Item>
         </Form>

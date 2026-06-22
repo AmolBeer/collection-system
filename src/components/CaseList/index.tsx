@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Table, Button, Space, Input, Select, Card, Tag, message, Modal, Form, DatePicker, Checkbox } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, EyeOutlined, SwapOutlined, PauseCircleOutlined, FilterOutlined } from '@ant-design/icons';
@@ -44,6 +44,7 @@ const collectors = [
 ];
 
 const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (caseIds: string[]) => void }> = ({ onViewDetail, onSuspend }) => {
+  const { t } = useLanguage();
   const [cases, setCases] = useState<Case[]>(defaultCases);
   const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
@@ -59,23 +60,22 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
   const [selectedReason, setSelectedReason] = useState('');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [validityDate, setValidityDate] = useState<Dayjs | null>(null);
-  const { t } = useLanguage();
 
   const suspendReasons = [
-    { value: '投诉', label: '投诉' },
-    { value: '死亡', label: '死亡' },
-    { value: '住院', label: '住院' },
-    { value: '起诉', label: '起诉' },
-    { value: '其他', label: '其他' },
+    { value: 'complaint', label: t.complaint },
+    { value: 'death', label: t.death },
+    { value: 'hospitalized', label: t.hospitalized },
+    { value: 'lawsuit', label: t.lawsuit },
+    { value: 'other', label: t.other },
   ];
 
   const forbiddenFeatures = [
-    { value: '禁止分案', label: '禁止分案' },
-    { value: '禁止发送短信', label: '禁止发送短信' },
-    { value: '禁止电话外呼', label: '禁止电话外呼' },
-    { value: '禁止WA发送', label: '禁止WA发送' },
-    { value: '禁止Email发送', label: '禁止Email发送' },
-    { value: '停止计算罚息', label: '停止计算罚息' },
+    { value: 'prohibitAllocation', label: t.prohibitAllocation },
+    { value: 'prohibitSms', label: t.prohibitSms },
+    { value: 'prohibitCall', label: t.prohibitCall },
+    { value: 'prohibitWa', label: t.prohibitWa },
+    { value: 'prohibitEmail', label: t.prohibitEmail },
+    { value: 'stopPenalty', label: t.stopPenalty },
   ];
 
   const filteredCases = useMemo(() => {
@@ -90,25 +90,25 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
     });
   }, [cases, searchText, stageFilter, statusFilter, collectorFilter]);
 
-  const handleAssign = () => {
+  const handleAssign = useCallback(() => {
     if (selectedCases.length === 0) {
-      message.error('请选择要指派的案件');
+      message.error(t.pleaseSelectCasesToAssign);
       return;
     }
     setAssignModalVisible(true);
-  };
+  }, [selectedCases.length, t]);
 
-  const handleAssignConfirm = () => {
+  const handleAssignConfirm = useCallback(() => {
     if (assignMode === 'team' && !selectedTeam) {
-      message.error('请选择催收组');
+      message.error(t.pleaseSelectCollectionTeam);
       return;
     }
     if (assignMode === 'collector' && !selectedCollector) {
-      message.error('请选择催收员');
+      message.error(t.pleaseSelectCollector);
       return;
     }
 
-    const updatedCases = cases.map(caseItem => {
+    setCases(prevCases => prevCases.map(caseItem => {
       if (selectedCases.includes(caseItem.id)) {
         let newAssignedTo = caseItem.assignedTo;
         if (assignMode === 'collector') {
@@ -128,13 +128,11 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
         };
       }
       return caseItem;
-    });
-
-    setCases(updatedCases);
+    }));
     setAssignModalVisible(false);
     setSelectedCases([]);
-    message.success(`成功指派 ${selectedCases.length} 个案件`);
-  };
+    message.success(t.successfullyAssigned.replace('{count}', selectedCases.length.toString()));
+  }, [assignMode, selectedTeam, selectedCollector, selectedCases, t]);
 
   const columns: ColumnsType<Case> = [
     {
@@ -143,7 +141,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       width: 50,
     },
     {
-      title: '案件ID',
+      title: t.caseNo,
       dataIndex: 'id',
       key: 'id',
       width: 140,
@@ -152,7 +150,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
-      title: '借款人',
+      title: t.borrowerName,
       dataIndex: 'borrowerName',
       key: 'borrowerName',
       width: 180,
@@ -161,7 +159,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
-      title: '电话',
+      title: t.phone,
       dataIndex: 'phone',
       key: 'phone',
       width: 130,
@@ -170,7 +168,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
-      title: '逾期天数',
+      title: t.overdueDays,
       dataIndex: 'overdueDays',
       key: 'overdueDays',
       width: 90,
@@ -179,12 +177,12 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
           color={days > 60 ? 'red' : days > 30 ? 'orange' : days > 15 ? 'gold' : 'blue'}
           style={{ fontSize: '12px', fontWeight: '500' }}
         >
-          {days} 天
+          {days} {t.day}
         </Tag>
       ),
     },
     {
-      title: '逾期金额',
+      title: t.overdueAmount,
       dataIndex: 'amount',
       key: 'amount',
       width: 120,
@@ -195,7 +193,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
-      title: '阶段',
+      title: t.stage,
       dataIndex: 'stage',
       key: 'stage',
       width: 80,
@@ -209,7 +207,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
-      title: '状态',
+      title: t.status,
       dataIndex: 'status',
       key: 'status',
       width: 100,
@@ -218,12 +216,12 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
           color={status === 'Open' ? 'green' : status === 'Processing' ? 'orange' : 'blue'}
           style={{ fontSize: '12px', fontWeight: '500' }}
         >
-          {status}
+          {status === 'Open' ? t.statusPending : status === 'Processing' ? t.statusProcessing : t.statusCompleted}
         </Tag>
       ),
     },
     {
-      title: '催收员',
+      title: t.collector,
       dataIndex: 'assignedTo',
       key: 'assignedTo',
       width: 130,
@@ -232,7 +230,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
-      title: '创建时间',
+      title: t.createTime,
       dataIndex: 'createTime',
       key: 'createTime',
       width: 160,
@@ -241,7 +239,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
-      title: '最后更新',
+      title: t.lastUpdateTime,
       dataIndex: 'lastUpdateTime',
       key: 'lastUpdateTime',
       width: 160,
@@ -250,7 +248,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
-      title: '操作',
+      title: t.action,
       key: 'action',
       width: 80,
       render: (_, record) => (
@@ -262,7 +260,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             onClick={() => onViewDetail(record.id)}
             style={{ color: '#0d4f3c', fontWeight: '500', padding: '0' }}
           >
-            详情
+            {t.detail}
           </Button>
         </Space>
       ),
@@ -274,9 +272,9 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       {/* 顶部工具栏 */}
       <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>案件列表</h2>
+          <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>{t.caseList}</h2>
           <p style={{ margin: '0', fontSize: '13px', color: '#6b7280' }}>
-            共 {filteredCases.length} 个案件
+            {t.total} {filteredCases.length} {t.cases}
           </p>
         </div>
         <Space size="middle">
@@ -287,7 +285,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             onClick={handleAssign}
             style={{ borderRadius: '8px' }}
           >
-            人工指派
+            {t.manualAssign}
           </Button>
           <Button
             type="default"
@@ -296,7 +294,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             onClick={() => setSuspendModalVisible(true)}
             style={{ borderRadius: '8px' }}
           >
-            停催
+            {t.suspend}
           </Button>
           <div style={{ 
             position: 'relative',
@@ -304,7 +302,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
           }}>
             <input
               type="text"
-              placeholder="搜索借款人、电话或案件ID..."
+              placeholder={`${t.search} ${t.borrowerName}, ${t.phone} ${t.or} ${t.caseNo}...`}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{
@@ -331,24 +329,24 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <FilterOutlined style={{ color: '#9ca3af' }} />
             <Select
-              placeholder="状态"
+              placeholder={t.status}
               value={statusFilter}
               onChange={setStatusFilter}
               style={{ width: 120 }}
               options={[
-                { value: 'all', label: '全部' },
-                { value: 'Open', label: '待处理' },
-                { value: 'Processing', label: '处理中' },
-                { value: 'Completed', label: '已完成' },
+                { value: 'all', label: t.all },
+                { value: 'Open', label: t.statusPending },
+                { value: 'Processing', label: t.statusProcessing },
+                { value: 'Completed', label: t.statusCompleted },
               ]}
             />
             <Select
-              placeholder="阶段"
+              placeholder={t.stage}
               value={stageFilter}
               onChange={setStageFilter}
               style={{ width: 100 }}
               options={[
-                { value: 'all', label: '全部' },
+                { value: 'all', label: t.all },
                 { value: 'M0', label: 'M0' },
                 { value: 'M1', label: 'M1' },
                 { value: 'M2', label: 'M2' },
@@ -357,12 +355,12 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
               ]}
             />
             <Select
-              placeholder="催收员"
+              placeholder={t.collector}
               value={collectorFilter}
               onChange={setCollectorFilter}
               style={{ width: 140 }}
               options={[
-                { value: 'all', label: '全部' },
+                { value: 'all', label: t.all },
                 ...collectors.map(collector => ({ value: collector.label, label: collector.label })),
               ]}
             />
@@ -380,7 +378,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             pageSize: 10,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50', '100'],
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => `${t.total} ${total} ${t.items}`,
           }}
           size="middle"
           rowSelection={{
@@ -394,7 +392,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
 
       {/* 指派模态框 */}
       <Modal
-        title="人工指派案件"
+        title={t.manualAssignment}
         open={assignModalVisible}
         onOk={handleAssignConfirm}
         onCancel={() => setAssignModalVisible(false)}
@@ -402,33 +400,33 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
         style={{ borderRadius: '12px' }}
       >
         <Form layout="vertical">
-          <Form.Item label="指派模式">
+          <Form.Item label={t.assignmentMode}>
             <Select
               value={assignMode}
               onChange={setAssignMode}
               options={[
-                { value: 'team', label: '按催收组分配' },
-                { value: 'collector', label: '直接指定催收员' },
+                { value: 'team', label: t.assignByTeam },
+                { value: 'collector', label: t.assignToCollector },
               ]}
             />
           </Form.Item>
 
           {assignMode === 'team' && (
             <>
-              <Form.Item label="选择催收组">
+              <Form.Item label={t.selectTeam}>
                 <Select
                   value={selectedTeam}
                   onChange={setSelectedTeam}
                   options={teams}
                 />
               </Form.Item>
-              <Form.Item label="分配方式">
+              <Form.Item label={t.distributionMethod}>
                 <Select
                   value={distributionMode}
                   onChange={setDistributionMode}
                   options={[
-                    { value: 'average', label: '均分' },
-                    { value: 'manual', label: '手动' },
+                    { value: 'average', label: t.average },
+                    { value: 'manual', label: t.manual },
                   ]}
                 />
               </Form.Item>
@@ -436,7 +434,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
           )}
 
           {assignMode === 'collector' && (
-            <Form.Item label="选择催收员">
+            <Form.Item label={t.selectCollector}>
               <Select
                 value={selectedCollector}
                 onChange={setSelectedCollector}
@@ -450,7 +448,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
 
           <Form.Item>
             <div style={{ color: '#6b7280', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-              已选择 <strong style={{ color: '#0d4f3c' }}>{selectedCases.length}</strong> 个案件
+              {t.selected} <strong style={{ color: '#0d4f3c' }}>{selectedCases.length}</strong> {t.cases}
             </div>
           </Form.Item>
         </Form>
@@ -458,15 +456,15 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
 
       {/* 停催模态框 */}
       <Modal
-        title="停催设置"
+        title={t.suspendSettings}
         open={suspendModalVisible}
         onOk={() => {
           if (!selectedReason) {
-            message.error('请选择停催原因');
+            message.error(t.pleaseSelectSuspendReason);
             return;
           }
           if (selectedFeatures.length === 0) {
-            message.error('请至少选择一项禁止功能');
+            message.error(t.pleaseSelectForbiddenFeature);
             return;
           }
           
@@ -477,7 +475,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
           setSelectedReason('');
           setSelectedFeatures([]);
           setValidityDate(null);
-          message.success(`成功将 ${selectedCases.length} 个案件加入停催列表`);
+          message.success(t.successfullyAddedToSuspended.replace('{count}', selectedCases.length.toString()));
         }}
         onCancel={() => {
           setSuspendModalVisible(false);
@@ -489,25 +487,25 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
         style={{ borderRadius: '12px' }}
       >
         <Form layout="vertical">
-          <Form.Item label="停催原因 *">
+          <Form.Item label={`${t.suspendReason} *`}>
             <Select
               value={selectedReason}
               onChange={setSelectedReason}
               options={suspendReasons}
-              placeholder="请选择停催原因"
+              placeholder={t.pleaseSelectSuspendReason}
             />
           </Form.Item>
 
-          <Form.Item label="有效期">
+          <Form.Item label={t.validityPeriod}>
             <DatePicker
               value={validityDate}
               onChange={setValidityDate}
               showTime
-              placeholder="选择停催到期时间"
+              placeholder={t.selectSuspendEndTime}
             />
           </Form.Item>
 
-          <Form.Item label="禁止功能 *">
+          <Form.Item label={`${t.forbiddenFeatures} *`}>
             <Checkbox.Group
               options={forbiddenFeatures}
               value={selectedFeatures}
@@ -518,7 +516,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
 
           <Form.Item>
             <div style={{ color: '#6b7280', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-              已选择 <strong style={{ color: '#0d4f3c' }}>{selectedCases.length}</strong> 个案件
+              {t.selected} <strong style={{ color: '#0d4f3c' }}>{selectedCases.length}</strong> {t.cases}
             </div>
           </Form.Item>
         </Form>

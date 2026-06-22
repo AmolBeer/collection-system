@@ -127,7 +127,7 @@ const CollectorDashboard: React.FC = () => {
       ),
     },
     {
-      title: '分配时间',
+      title: t.assignedTime,
       dataIndex: 'assignedTime',
       key: 'assignedTime',
       render: (time: string) => (

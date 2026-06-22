@@ -26,4 +26,4 @@ export interface CaseItem {
   productId: string;
 }
 
-export type Language = 'zh' | 'id';
+export type Language = 'zh' | 'en' | 'id';

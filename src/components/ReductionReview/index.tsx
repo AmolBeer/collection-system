@@ -205,7 +205,7 @@ const ReductionReview: React.FC = () => {
       return app;
     }));
 
-    message.success(reviewAction === 'approve' ? '减免申请已批准' : '减免申请已驳回');
+    message.success(reviewAction === 'approve' ? t.reductionApprovedSuccess : t.reductionRejectedSuccess);
     setReviewModalVisible(false);
   };
 
@@ -225,7 +225,7 @@ const ReductionReview: React.FC = () => {
       return app;
     }));
 
-    message.success('还款码已生成：' + paymentCode);
+    message.success(t.paymentCodeGeneratedSuccess + '：' + paymentCode);
   };
 
   // 模拟确认还款完成
@@ -242,13 +242,13 @@ const ReductionReview: React.FC = () => {
       return app;
     }));
 
-    message.success('还款已完成，案件已平账');
+    message.success(t.paymentCompletedSuccess);
   };
 
   // 表格列定义
   const columns: ColumnsType<ReductionApplication> = [
     {
-      title: 'Application ID',
+      title: t.applicationId,
       dataIndex: 'applicationId',
       key: 'applicationId',
       width: 180,
@@ -257,7 +257,7 @@ const ReductionReview: React.FC = () => {
       ),
     },
     {
-      title: 'Customer',
+      title: t.customer,
       key: 'customer',
       width: 180,
       render: (_, record) => (
@@ -268,7 +268,7 @@ const ReductionReview: React.FC = () => {
       ),
     },
     {
-      title: 'Case ID',
+      title: t.caseNo,
       dataIndex: 'caseId',
       key: 'caseId',
       width: 100,
@@ -277,19 +277,19 @@ const ReductionReview: React.FC = () => {
       ),
     },
     {
-      title: 'Order',
+      title: t.orderId,
       dataIndex: 'orderId',
       key: 'orderId',
       width: 120,
     },
     {
-      title: 'Apply Time',
+      title: t.applyTime,
       dataIndex: 'applyTime',
       key: 'applyTime',
       width: 150,
     },
     {
-      title: 'Applicant',
+      title: t.applyBy,
       dataIndex: 'applicant',
       key: 'applicant',
       width: 140,
@@ -301,14 +301,14 @@ const ReductionReview: React.FC = () => {
       ),
     },
     {
-      title: 'Bills',
+      title: t.billCount,
       dataIndex: 'billCount',
       key: 'billCount',
       width: 80,
       align: 'center',
     },
     {
-      title: 'Total Amount',
+      title: t.totalAmount,
       dataIndex: 'totalAmount',
       key: 'totalAmount',
       width: 130,
@@ -318,7 +318,7 @@ const ReductionReview: React.FC = () => {
       ),
     },
     {
-      title: 'Requested',
+      title: t.requested,
       dataIndex: 'requestedReduction',
       key: 'requestedReduction',
       width: 130,
@@ -328,7 +328,7 @@ const ReductionReview: React.FC = () => {
       ),
     },
     {
-      title: 'Approved',
+      title: t.approvedAmount,
       dataIndex: 'approvedReduction',
       key: 'approvedReduction',
       width: 130,
@@ -340,23 +340,23 @@ const ReductionReview: React.FC = () => {
       ),
     },
     {
-      title: 'Status',
+      title: t.status,
       dataIndex: 'status',
       key: 'status',
       width: 110,
       render: (status: ReductionStatus) => {
         const statusConfig: Record<ReductionStatus, { color: string; label: string }> = {
-          pending: { color: 'orange', label: 'Pending' },
-          approved: { color: 'blue', label: 'Approved' },
-          rejected: { color: 'red', label: 'Rejected' },
-          completed: { color: 'green', label: 'Completed' },
+          pending: { color: 'orange', label: t.pendingReview },
+          approved: { color: 'blue', label: t.approved },
+          rejected: { color: 'red', label: t.rejected },
+          completed: { color: 'green', label: t.statusCompleted },
         };
         const config = statusConfig[status];
         return <Tag color={config.color}>{config.label}</Tag>;
       },
     },
     {
-      title: 'Action',
+      title: t.action,
       key: 'action',
       width: 200,
       fixed: 'right',
@@ -368,7 +368,7 @@ const ReductionReview: React.FC = () => {
             onClick={() => handleViewDetail(record)}
             style={{ padding: '0 4px' }}
           >
-            Detail
+            {t.detail}
           </Button>
           {record.status === 'pending' && (
             <>
@@ -378,7 +378,7 @@ const ReductionReview: React.FC = () => {
                 onClick={() => handleReview(record, 'approve')}
                 style={{ color: '#22c55e', padding: '0 4px' }}
               >
-                Approve
+                {t.approve}
               </Button>
               <Button 
                 type="link" 
@@ -386,7 +386,7 @@ const ReductionReview: React.FC = () => {
                 onClick={() => handleReview(record, 'reject')}
                 style={{ color: '#ef4444', padding: '0 4px' }}
               >
-                Reject
+                {t.reject}
               </Button>
             </>
           )}
@@ -397,7 +397,7 @@ const ReductionReview: React.FC = () => {
               onClick={() => handleGeneratePaymentCode(record)}
               style={{ color: '#0d4f3c', padding: '0 4px' }}
             >
-              Generate VA
+              {t.generateVa}
             </Button>
           )}
           {record.status === 'approved' && record.paymentCode && !record.paymentTime && (
@@ -407,7 +407,7 @@ const ReductionReview: React.FC = () => {
               onClick={() => handleConfirmPayment(record)}
               style={{ color: '#22c55e', padding: '0 4px' }}
             >
-              Confirm Payment
+              {t.confirmPayment}
             </Button>
           )}
         </Space>
@@ -420,19 +420,19 @@ const ReductionReview: React.FC = () => {
       {/* 页面标题 */}
       <div style={{ marginBottom: '24px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>
-          Reduction Review
+          {t.reductionReview}
         </h2>
         <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
-          Review and approve reduction applications from collectors
+          {t.reviewReductionApplications}
         </p>
       </div>
 
       {/* 统计卡片 */}
       <Row gutter={16} style={{ marginBottom: '24px' }}>
         <Col span={6}>
-          <Card bordered={false} style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+          <Card variant="borderless" style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
-              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>Pending Review</span>}
+              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>{t.pendingReviewCount}</span>}
               value={statistics.pending}
               prefix={<ClockCircleOutlined style={{ color: '#f97316' }} />}
               valueStyle={{ color: '#f97316', fontSize: '28px', fontWeight: '600' }}
@@ -440,9 +440,9 @@ const ReductionReview: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card bordered={false} style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+          <Card variant="borderless" style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
-              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>Approved</span>}
+              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>{t.approved}</span>}
               value={statistics.approved}
               prefix={<CheckCircleOutlined style={{ color: '#3b82f6' }} />}
               valueStyle={{ color: '#3b82f6', fontSize: '28px', fontWeight: '600' }}
@@ -450,9 +450,9 @@ const ReductionReview: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card bordered={false} style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+          <Card variant="borderless" style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
-              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>Completed</span>}
+              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>{t.statusCompleted}</span>}
               value={statistics.completed}
               prefix={<CheckCircleOutlined style={{ color: '#22c55e' }} />}
               valueStyle={{ color: '#22c55e', fontSize: '28px', fontWeight: '600' }}
@@ -460,9 +460,9 @@ const ReductionReview: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card bordered={false} style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+          <Card variant="borderless" style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
-              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>Total Reduction</span>}
+              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>{t.totalReductionAmount}</span>}
               value={statistics.totalReduction}
               prefix={<DollarOutlined style={{ color: '#0d4f3c' }} />}
               valueStyle={{ color: '#0d4f3c', fontSize: '28px', fontWeight: '600' }}
@@ -474,21 +474,21 @@ const ReductionReview: React.FC = () => {
       </Row>
 
       {/* 筛选和表格 */}
-      <Card bordered={false} style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+      <Card variant="borderless" style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', margin: 0 }}>Application List</h3>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', margin: 0 }}>{t.applicationList}</h3>
           <Space>
-            <span style={{ fontSize: '13px', color: '#6b7280' }}>Status:</span>
+            <span style={{ fontSize: '13px', color: '#6b7280' }}>{t.status}:</span>
             <Select
               value={filterStatus}
               onChange={setFilterStatus}
               style={{ width: 150 }}
               options={[
-                { value: 'all', label: 'All' },
-                { value: 'pending', label: 'Pending' },
-                { value: 'approved', label: 'Approved' },
-                { value: 'rejected', label: 'Rejected' },
-                { value: 'completed', label: 'Completed' },
+                { value: 'all', label: t.all },
+                { value: 'pending', label: t.pendingReview },
+                { value: 'approved', label: t.approved },
+                { value: 'rejected', label: t.rejected },
+                { value: 'completed', label: t.statusCompleted },
               ]}
             />
           </Space>
@@ -506,7 +506,7 @@ const ReductionReview: React.FC = () => {
 
       {/* 详情弹窗 */}
       <Modal
-        title="Reduction Application Detail"
+        title={t.reductionApplicationDetail}
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
         footer={null}
@@ -516,39 +516,41 @@ const ReductionReview: React.FC = () => {
           <div>
             {/* 基本信息 */}
             <Descriptions bordered column={2} size="small" style={{ marginBottom: '16px' }}>
-              <Descriptions.Item label="Application ID" span={2}>
+              <Descriptions.Item label={t.applicationId} span={2}>
                 <span style={{ fontFamily: 'monospace', fontWeight: '500' }}>{selectedApplication.applicationId}</span>
               </Descriptions.Item>
-              <Descriptions.Item label="Customer Name">
+              <Descriptions.Item label={t.customerName}>
                 {selectedApplication.customerName}
               </Descriptions.Item>
-              <Descriptions.Item label="Phone">
+              <Descriptions.Item label={t.phone}>
                 {selectedApplication.phone}
               </Descriptions.Item>
-              <Descriptions.Item label="Case ID">
+              <Descriptions.Item label={t.caseNo}>
                 {selectedApplication.caseId}
               </Descriptions.Item>
-              <Descriptions.Item label="Order ID">
+              <Descriptions.Item label={t.orderId}>
                 {selectedApplication.orderId}
               </Descriptions.Item>
-              <Descriptions.Item label="Apply Time">
+              <Descriptions.Item label={t.applyTime}>
                 {selectedApplication.applyTime}
               </Descriptions.Item>
-              <Descriptions.Item label="Applicant">
+              <Descriptions.Item label={t.applyBy}>
                 {selectedApplication.applicant}
               </Descriptions.Item>
-              <Descriptions.Item label="Status">
+              <Descriptions.Item label={t.status}>
                 <Tag color={
                   selectedApplication.status === 'pending' ? 'orange' :
                   selectedApplication.status === 'approved' ? 'blue' :
                   selectedApplication.status === 'rejected' ? 'red' : 'green'
                 }>
-                  {selectedApplication.status.toUpperCase()}
+                  {selectedApplication.status === 'pending' ? t.pendingReview :
+                   selectedApplication.status === 'approved' ? t.approved :
+                   selectedApplication.status === 'rejected' ? t.rejected : t.statusCompleted}
                 </Tag>
               </Descriptions.Item>
             </Descriptions>
 
-            <Divider>Bill Details</Divider>
+            <Divider>{t.billDetails}</Divider>
 
             {/* 账单明细 */}
             <Table
@@ -557,16 +559,16 @@ const ReductionReview: React.FC = () => {
               pagination={false}
               size="small"
               columns={[
-                { title: 'Bill Number', dataIndex: 'billNumber', key: 'billNumber' },
+                { title: t.billNumber, dataIndex: 'billNumber', key: 'billNumber' },
                 { 
-                  title: 'Original Amount', 
+                  title: t.originalAmount, 
                   dataIndex: 'originalAmount', 
                   key: 'originalAmount',
                   align: 'right',
                   render: (val: number) => `${val.toLocaleString('id-ID')} IDR`
                 },
                 { 
-                  title: 'Reduction', 
+                  title: t.reduction, 
                   dataIndex: 'reductionAmount', 
                   key: 'reductionAmount',
                   align: 'right',
@@ -577,7 +579,7 @@ const ReductionReview: React.FC = () => {
                   )
                 },
                 { 
-                  title: 'Final Amount', 
+                  title: t.finalAmount, 
                   dataIndex: 'finalAmount', 
                   key: 'finalAmount',
                   align: 'right',
@@ -591,7 +593,7 @@ const ReductionReview: React.FC = () => {
               <Row gutter={16}>
                 <Col span={8}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Total Amount</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.totalAmount}</div>
                     <div style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
                       {selectedApplication.totalAmount.toLocaleString('id-ID')} IDR
                     </div>
@@ -599,7 +601,7 @@ const ReductionReview: React.FC = () => {
                 </Col>
                 <Col span={8}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Requested Reduction</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.requestedReduction}</div>
                     <div style={{ fontSize: '18px', fontWeight: '600', color: '#f97316' }}>
                       -{selectedApplication.requestedReduction.toLocaleString('id-ID')} IDR
                     </div>
@@ -607,7 +609,7 @@ const ReductionReview: React.FC = () => {
                 </Col>
                 <Col span={8}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Approved Reduction</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.approvedReduction}</div>
                     <div style={{ fontSize: '18px', fontWeight: '600', color: '#22c55e' }}>
                       {selectedApplication.approvedReduction > 0 
                         ? `-${selectedApplication.approvedReduction.toLocaleString('id-ID')} IDR`
@@ -621,15 +623,15 @@ const ReductionReview: React.FC = () => {
             {/* 审核信息 */}
             {selectedApplication.reviewTime && (
               <>
-                <Divider>Review Information</Divider>
+                <Divider>{t.reviewInformation}</Divider>
                 <Descriptions bordered column={2} size="small">
-                  <Descriptions.Item label="Review Time" span={2}>
+                  <Descriptions.Item label={t.reviewTime} span={2}>
                     {selectedApplication.reviewTime}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Reviewer" span={2}>
+                  <Descriptions.Item label={t.reviewer} span={2}>
                     {selectedApplication.reviewer}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Comment" span={2}>
+                  <Descriptions.Item label={t.comment} span={2}>
                     {selectedApplication.reviewComment}
                   </Descriptions.Item>
                 </Descriptions>
@@ -639,16 +641,16 @@ const ReductionReview: React.FC = () => {
             {/* 还款信息 */}
             {selectedApplication.paymentCode && (
               <>
-                <Divider>Payment Information</Divider>
+                <Divider>{t.paymentInformation}</Divider>
                 <Descriptions bordered column={2} size="small">
-                  <Descriptions.Item label="Payment Code">
+                  <Descriptions.Item label={t.paymentCode}>
                     <span style={{ fontFamily: 'monospace', fontWeight: '500' }}>{selectedApplication.paymentCode}</span>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Payment Time">
-                    {selectedApplication.paymentTime || 'Waiting for payment'}
+                  <Descriptions.Item label={t.paymentTime}>
+                    {selectedApplication.paymentTime || t.waitingForPayment}
                   </Descriptions.Item>
                   {selectedApplication.completedTime && (
-                    <Descriptions.Item label="Completed Time" span={2}>
+                    <Descriptions.Item label={t.completedTime} span={2}>
                       {selectedApplication.completedTime}
                     </Descriptions.Item>
                   )}
@@ -657,16 +659,16 @@ const ReductionReview: React.FC = () => {
             )}
 
             {/* 流程时间线 */}
-            <Divider>Process Timeline</Divider>
+            <Divider>{t.processTimeline}</Divider>
             <Timeline
               items={[
                 {
                   color: 'green',
                   children: (
                     <div>
-                      <div style={{ fontWeight: '500' }}>Application Submitted</div>
+                      <div style={{ fontWeight: '500' }}>{t.applicationSubmitted}</div>
                       <div style={{ fontSize: '12px', color: '#6b7280' }}>{selectedApplication.applyTime}</div>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>By: {selectedApplication.applicant}</div>
+                      <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.by}: {selectedApplication.applicant}</div>
                     </div>
                   ),
                 },
@@ -675,18 +677,18 @@ const ReductionReview: React.FC = () => {
                   children: selectedApplication.reviewTime ? (
                     <div>
                       <div style={{ fontWeight: '500' }}>
-                        {selectedApplication.status === 'approved' ? 'Approved' : 'Rejected'}
+                        {selectedApplication.status === 'approved' ? t.approved : t.rejected}
                       </div>
                       <div style={{ fontSize: '12px', color: '#6b7280' }}>{selectedApplication.reviewTime}</div>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>By: {selectedApplication.reviewer}</div>
+                      <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.by}: {selectedApplication.reviewer}</div>
                       {selectedApplication.reviewComment && (
                         <div style={{ fontSize: '12px', color: '#4b5563', marginTop: '4px' }}>
-                          Comment: {selectedApplication.reviewComment}
+                          {t.comment}: {selectedApplication.reviewComment}
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div style={{ color: '#9ca3af' }}>Pending Review</div>
+                    <div style={{ color: '#9ca3af' }}>{t.pendingReview}</div>
                   ),
                 },
                 ...(selectedApplication.paymentCode ? [{
@@ -694,16 +696,16 @@ const ReductionReview: React.FC = () => {
                   children: (
                     <div>
                       <div style={{ fontWeight: '500' }}>
-                        {selectedApplication.paymentCode ? 'Payment Code Generated' : 'Generating...'}
+                        {selectedApplication.paymentCode ? t.paymentCodeGenerated : t.generating}
                       </div>
                       {selectedApplication.paymentCode && (
                         <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                          Code: {selectedApplication.paymentCode}
+                          {t.code}: {selectedApplication.paymentCode}
                         </div>
                       )}
                       {selectedApplication.paymentTime && (
                         <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                          Paid at: {selectedApplication.paymentTime}
+                          {t.paidAt}: {selectedApplication.paymentTime}
                         </div>
                       )}
                     </div>
@@ -713,7 +715,7 @@ const ReductionReview: React.FC = () => {
                   color: 'green',
                   children: (
                     <div>
-                      <div style={{ fontWeight: '500' }}>Completed & Settled</div>
+                      <div style={{ fontWeight: '500' }}>{t.completedAndSettled}</div>
                       <div style={{ fontSize: '12px', color: '#6b7280' }}>{selectedApplication.completedTime}</div>
                     </div>
                   ),
@@ -726,11 +728,11 @@ const ReductionReview: React.FC = () => {
 
       {/* 审核弹窗 */}
       <Modal
-        title={reviewAction === 'approve' ? 'Approve Reduction Application' : 'Reject Reduction Application'}
+        title={reviewAction === 'approve' ? t.approveReductionApplication : t.rejectReductionApplication}
         open={reviewModalVisible}
         onCancel={() => setReviewModalVisible(false)}
         onOk={handleSubmitReview}
-        okText={reviewAction === 'approve' ? 'Approve' : 'Reject'}
+        okText={reviewAction === 'approve' ? t.approve : t.reject}
         okButtonProps={{ 
           danger: reviewAction === 'reject',
           style: reviewAction === 'reject' ? { backgroundColor: '#ef4444' } : { backgroundColor: '#22c55e' }
@@ -741,15 +743,15 @@ const ReductionReview: React.FC = () => {
             {/* 申请信息 */}
             <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: '#6b7280' }}>Customer:</span>
+                <span style={{ color: '#6b7280' }}>{t.customerName}:</span>
                 <span style={{ fontWeight: '500' }}>{selectedApplication.customerName}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: '#6b7280' }}>Total Amount:</span>
+                <span style={{ color: '#6b7280' }}>{t.totalAmount}:</span>
                 <span style={{ fontWeight: '500' }}>{selectedApplication.totalAmount.toLocaleString('id-ID')} IDR</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6b7280' }}>Requested Reduction:</span>
+                <span style={{ color: '#6b7280' }}>{t.requestedReduction}:</span>
                 <span style={{ fontWeight: '500', color: '#f97316' }}>
                   -{selectedApplication.requestedReduction.toLocaleString('id-ID')} IDR
                 </span>
@@ -759,9 +761,9 @@ const ReductionReview: React.FC = () => {
             {reviewAction === 'approve' ? (
               <Form form={form} layout="vertical">
                 <Form.Item 
-                  label="Approved Reduction Amount"
+                  label={t.approvedReductionAmount}
                   required
-                  help="Enter the amount to approve for reduction"
+                  help={t.enterApprovedAmount}
                 >
                   <InputNumber
                     value={approvedAmount}
@@ -773,19 +775,19 @@ const ReductionReview: React.FC = () => {
                     parser={value => value!.replace(/,/g, '') as unknown as number}
                   />
                   <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-                    Max: {selectedApplication.requestedReduction.toLocaleString('id-ID')} IDR
+                    {t.max}: {selectedApplication.requestedReduction.toLocaleString('id-ID')} IDR
                   </div>
                 </Form.Item>
               </Form>
             ) : (
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-                  Rejection Reason <span style={{ color: '#ef4444' }}>*</span>
+                  {t.rejectionReason} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <TextArea
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="Please enter the reason for rejection..."
+                  placeholder={t.enterRejectionReason}
                   rows={4}
                 />
               </div>
@@ -795,7 +797,7 @@ const ReductionReview: React.FC = () => {
               <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '8px' }}>
                 <ExclamationCircleOutlined style={{ color: '#f59e0b', marginRight: '8px' }} />
                 <span style={{ fontSize: '13px', color: '#92400e' }}>
-                  After approval, the system will generate a payment code for the customer.
+                  {t.afterApprovalGenerateCode}
                 </span>
               </div>
             )}

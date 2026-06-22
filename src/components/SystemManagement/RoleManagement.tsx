@@ -177,28 +177,28 @@ const RoleManagement: React.FC = () => {
 
   const columns: ColumnsType<Role> = [
     {
-      title: '角色名称',
+      title: t.roleName,
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: '描述',
+      title: t.description,
       dataIndex: 'description',
       key: 'description',
     },
     {
-      title: '权限数量',
+      title: t.permissionCount,
       dataIndex: 'permissions',
       key: 'permissions',
       render: (permissions: string[]) => permissions.length,
     },
     {
-      title: '创建时间',
+      title: t.createTime,
       dataIndex: 'createTime',
       key: 'createTime',
     },
     {
-      title: '操作',
+      title: t.action,
       key: 'action',
       render: (_, record) => (
         <Space size="middle">

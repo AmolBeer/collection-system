@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Table, Button, Upload, message, Space, Card, Modal, Tag, Popconfirm } from 'antd';
+import { Table, Button, Upload, message, Space, Card, Modal, Tag, Popconfirm, Select, Row, Col, Input } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile, UploadProps } from 'antd';
-import { DownloadOutlined, UploadOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { DownloadOutlined, UploadOutlined, DeleteOutlined, EyeOutlined, FilterOutlined, TagOutlined } from '@ant-design/icons';
+import { useLanguage } from '../../../i18n/LanguageContext';
 import * as XLSX from 'xlsx';
 
 interface Customer {
@@ -12,6 +13,15 @@ interface Customer {
   amount?: string;
   dueDate?: string;
   status: 'pending' | 'sent' | 'failed';
+  tags: string[];
+}
+
+interface UserTag {
+  id: string;
+  tagName: string;
+  tagType: string;
+  tagColor: string;
+  enabled: boolean;
 }
 
 interface CustomerGroup {
@@ -23,6 +33,14 @@ interface CustomerGroup {
   customers: Customer[];
 }
 
+const defaultTags: UserTag[] = [
+  { id: '1', tagName: '新客户', tagType: 'newCustomer', tagColor: 'blue', enabled: true },
+  { id: '2', tagName: '活跃用户', tagType: 'behavior', tagColor: 'green', enabled: true },
+  { id: '3', tagName: '高风险', tagType: 'risk', tagColor: 'red', enabled: true },
+  { id: '4', tagName: 'VIP客户', tagType: 'custom', tagColor: 'purple', enabled: true },
+  { id: '5', tagName: '沉睡用户', tagType: 'behavior', tagColor: 'orange', enabled: false },
+];
+
 const defaultGroups: CustomerGroup[] = [
   {
     id: '1',
@@ -31,21 +49,30 @@ const defaultGroups: CustomerGroup[] = [
     customerCount: 5,
     status: 'completed',
     customers: [
-      { id: '1', name: '张三', phone: '13800138001', amount: '5000', dueDate: '2024-04-15', status: 'pending' },
-      { id: '2', name: '李四', phone: '13800138002', amount: '3000', dueDate: '2024-04-16', status: 'pending' },
-      { id: '3', name: '王五', phone: '13800138003', amount: '8000', dueDate: '2024-04-17', status: 'pending' },
-      { id: '4', name: '赵六', phone: '13800138004', amount: '2000', dueDate: '2024-04-18', status: 'pending' },
-      { id: '5', name: '孙七', phone: '13800138005', amount: '6000', dueDate: '2024-04-19', status: 'pending' },
+      { id: '1', name: '张三', phone: '13800138001', amount: '5000', dueDate: '2024-04-15', status: 'pending', tags: ['1', '3'] },
+      { id: '2', name: '李四', phone: '13800138002', amount: '3000', dueDate: '2024-04-16', status: 'pending', tags: ['1', '2'] },
+      { id: '3', name: '王五', phone: '13800138003', amount: '8000', dueDate: '2024-04-17', status: 'pending', tags: ['4'] },
+      { id: '4', name: '赵六', phone: '13800138004', amount: '2000', dueDate: '2024-04-18', status: 'pending', tags: ['2', '4'] },
+      { id: '5', name: '孙七', phone: '13800138005', amount: '6000', dueDate: '2024-04-19', status: 'pending', tags: ['1', '2', '3'] },
     ],
   },
 ];
 
 const CustomerGroupManagement: React.FC = () => {
+  const { t } = useLanguage();
   const [groups, setGroups] = useState<CustomerGroup[]>(defaultGroups);
   const [selectedGroup, setSelectedGroup] = useState<CustomerGroup | null>(null);
   const [customerModalVisible, setCustomerModalVisible] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [totalFilteredCount, setTotalFilteredCount] = useState(0);
+  const [fullFilteredCustomers, setFullFilteredCustomers] = useState<Customer[]>([]);
+  const [newGroupName, setNewGroupName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const enabledTags = defaultTags.filter(tag => tag.enabled);
 
   const handleDownloadTemplate = () => {
     const templateData = [
@@ -78,6 +105,7 @@ const CustomerGroupManagement: React.FC = () => {
           amount: item['金额'] || '',
           dueDate: item['到期日期'] || '',
           status: 'pending' as const,
+          tags: [],
         }));
         
         const newGroup: CustomerGroup = {
@@ -111,27 +139,103 @@ const CustomerGroupManagement: React.FC = () => {
     setCustomerModalVisible(true);
   };
 
+  const handleOpenFilterModal = () => {
+    setFilterModalVisible(true);
+    setSelectedTags([]);
+    setFilteredCustomers([]);
+    setNewGroupName('');
+  };
+
+  const handleApplyFilter = () => {
+    if (selectedTags.length === 0) {
+      message.warning('请至少选择一个标签');
+      return;
+    }
+
+    const allCustomers: Customer[] = [];
+    groups.forEach(group => {
+      allCustomers.push(...group.customers);
+    });
+
+    const filtered = allCustomers.filter(customer => 
+      selectedTags.some(tagId => customer.tags.includes(tagId))
+    );
+
+    const PREVIEW_LIMIT = 20;
+    const previewCustomers = filtered.slice(0, PREVIEW_LIMIT);
+    
+    setFilteredCustomers(previewCustomers);
+    setTotalFilteredCount(filtered.length);
+    setFullFilteredCustomers(filtered);
+    message.success(`筛选出 ${filtered.length} 位客户`);
+  };
+
+  const handleSaveAsGroup = () => {
+    if (totalFilteredCount === 0) {
+      message.warning('没有可保存的客户');
+      return;
+    }
+    if (!newGroupName.trim()) {
+      message.warning('请输入客群名称');
+      return;
+    }
+
+    const newGroup: CustomerGroup = {
+      id: Date.now().toString(),
+      groupName: newGroupName.trim(),
+      uploadTime: new Date().toLocaleString('zh-CN'),
+      customerCount: totalFilteredCount,
+      status: 'completed',
+      customers: fullFilteredCustomers,
+    };
+
+    setGroups([...groups, newGroup]);
+    message.success(`成功创建客群「${newGroupName}」，包含 ${totalFilteredCount} 位客户`);
+    
+    setFilterModalVisible(false);
+    setSelectedTags([]);
+    setFilteredCustomers([]);
+    setTotalFilteredCount(0);
+    setFullFilteredCustomers([]);
+    setNewGroupName('');
+  };
+
+  const getTagInfo = (tagId: string) => {
+    return defaultTags.find(tag => tag.id === tagId);
+  };
+
+  const getTagColor = (tagType: string) => {
+    const colorMap: Record<string, string> = {
+      newCustomer: '#1890ff',
+      oldCustomer: '#52c41a',
+      behavior: '#fa8c16',
+      risk: '#f5222d',
+      custom: '#722ed1',
+    };
+    return colorMap[tagType] || '#1890ff';
+  };
+
   const groupColumns: ColumnsType<CustomerGroup> = [
     {
-      title: '客群名称',
+      title: t.groupName,
       dataIndex: 'groupName',
       key: 'groupName',
     },
     {
-      title: '上传时间',
+      title: t.uploadTime,
       dataIndex: 'uploadTime',
       key: 'uploadTime',
       width: 180,
     },
     {
-      title: '客户数量',
+      title: t.customerCount,
       dataIndex: 'customerCount',
       key: 'customerCount',
       width: 100,
-      render: (count: number) => `${count} 人`,
+      render: (count: number) => `${count}`,
     },
     {
-      title: '操作',
+      title: t.action,
       key: 'action',
       width: 200,
       render: (_, record) => (
@@ -166,24 +270,47 @@ const CustomerGroupManagement: React.FC = () => {
 
   const customerColumns: ColumnsType<Customer> = [
     {
-      title: '用户ID',
+      title: t.userId,
       dataIndex: 'id',
       key: 'id',
     },
     {
-      title: '手机号',
+      title: '姓名',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: t.phone,
       dataIndex: 'phone',
       key: 'phone',
+    },
+    {
+      title: t.userTag,
+      key: 'tags',
+      render: (_, record) => (
+        <Space>
+          {record.tags.map(tagId => {
+            const tagInfo = getTagInfo(tagId);
+            return tagInfo ? (
+              <Tag key={tagId} color={getTagColor(tagInfo.tagType)}>
+                {tagInfo.tagName}
+              </Tag>
+            ) : null;
+          })}
+        </Space>
+      ),
     },
   ];
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>客群管理</h3>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
         <Space>
           <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>
-            下载模板
+            {t.downloadTemplate}
+          </Button>
+          <Button icon={<FilterOutlined />} onClick={handleOpenFilterModal}>
+            {t.filterByTag}
           </Button>
           <Upload
             customRequest={handleFileUpload}
@@ -199,7 +326,7 @@ const CustomerGroupManagement: React.FC = () => {
         </Space>
       </div>
       
-      <Card bordered={false}>
+      <Card variant="borderless">
         <Table
           columns={groupColumns}
           dataSource={groups}
@@ -230,6 +357,96 @@ const CustomerGroupManagement: React.FC = () => {
           }}
           size="small"
         />
+      </Modal>
+
+      <Modal
+        title={t.filterByTag}
+        open={filterModalVisible}
+        onCancel={() => setFilterModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        <div style={{ padding: 20 }}>
+          <Row gutter={16}>
+            <Col span={24}>
+              <Select
+                mode="multiple"
+                placeholder={t.selectTag}
+                value={selectedTags}
+                onChange={setSelectedTags}
+                style={{ width: '100%' }}
+                maxTagCount="responsive"
+              >
+                {enabledTags.map(tag => (
+                  <Select.Option key={tag.id} value={tag.id}>
+                    <Tag color={getTagColor(tag.tagType)} style={{ marginRight: 8 }}>
+                      {tag.tagName}
+                    </Tag>
+                  </Select.Option>
+                ))}
+              </Select>
+            </Col>
+          </Row>
+
+          <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+            <div style={{ marginBottom: 12 }}>
+              <h4>{t.filterCustomers} ({totalFilteredCount} 位客户)</h4>
+              {totalFilteredCount > 20 && (
+                <p style={{ fontSize: 12, color: '#999', margin: '4px 0 0 0' }}>
+                  仅显示前20条预览，实际筛选结果为 {totalFilteredCount} 条
+                </p>
+              )}
+            </div>
+            {filteredCustomers.length > 0 ? (
+              <Table
+                columns={customerColumns}
+                dataSource={filteredCustomers}
+                rowKey="id"
+                pagination={{
+                  pageSize: 5,
+                  showSizeChanger: false,
+                }}
+                size="small"
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: 20, color: '#999' }}>
+                {selectedTags.length > 0 ? '暂无匹配的客户' : '请选择标签进行筛选'}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <Input
+              placeholder="输入新客群名称"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              style={{ marginBottom: 16 }}
+            />
+            <div style={{ textAlign: 'right' }}>
+              <Space>
+                <Button onClick={() => {
+                  setSelectedTags([]);
+                  setFilteredCustomers([]);
+                  setTotalFilteredCount(0);
+                  setFullFilteredCustomers([]);
+                  setNewGroupName('');
+                }}>
+                  重置
+                </Button>
+                <Button type="primary" onClick={handleApplyFilter}>
+                  {t.filterCustomers}
+                </Button>
+                <Button 
+                  type="primary" 
+                  onClick={handleSaveAsGroup}
+                  disabled={totalFilteredCount === 0 || !newGroupName.trim()}
+                >
+                  保存为客群
+                </Button>
+              </Space>
+            </div>
+          </div>
+        </div>
       </Modal>
     </div>
   );

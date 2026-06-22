@@ -38,6 +38,10 @@ function StageModal({ visible, stage, stages, selectedProductId, onCancel, onSav
         setMaxDaysInfinity(false);
       }
     }
+    
+    return () => {
+      form.resetFields();
+    };
   }, [visible, stage, form, selectedProductId]);
 
   const validateRanges = (minDays: number, maxDays: number | null, productId: string, id: string | undefined) => {

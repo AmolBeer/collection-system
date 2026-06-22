@@ -2,12 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { Table, Button, Modal, Form, Select, Input, message, Space, Tag, Popconfirm, Card, Row, Col, InputNumber, Checkbox } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface AutoAllocationRule {
   id: string;
   ruleName: string;
   products: string[];
   overdueStage: string;
+  overdueStageRange: { start: string; end: string } | null;
   collectorGroup: string;
   allocationType: 'roundRobin' | 'loadBalance' | 'random';
   priority: number;
@@ -25,6 +27,7 @@ const defaultRules: AutoAllocationRule[] = [
     ruleName: '个人贷款M1阶段分配规则',
     products: ['个人贷款'],
     overdueStage: 'M1',
+    overdueStageRange: null,
     collectorGroup: '催收一组',
     allocationType: 'roundRobin',
     priority: 1,
@@ -37,9 +40,10 @@ const defaultRules: AutoAllocationRule[] = [
   },
   {
     id: '2',
-    ruleName: '企业贷款M2阶段分配规则',
-    products: ['企业贷款'],
-    overdueStage: 'M2',
+    ruleName: '企业贷款M1-M3阶段分配规则',
+    products: ['企业贷款', '个人贷款'],
+    overdueStage: 'custom',
+    overdueStageRange: { start: 'M1', end: 'M3' },
     collectorGroup: '催收二组',
     allocationType: 'loadBalance',
     priority: 2,
@@ -70,6 +74,7 @@ const stageColors: Record<string, string> = {
 };
 
 const AutoAllocationManagement: React.FC = () => {
+  const { t } = useLanguage();
   const [rules, setRules] = useState<AutoAllocationRule[]>(defaultRules);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRule, setEditingRule] = useState<AutoAllocationRule | null>(null);
@@ -150,16 +155,21 @@ const AutoAllocationManagement: React.FC = () => {
       const values = await form.validateFields();
       console.log('Form values:', values);
       
-      await validateDuplicateRule(values);
+      const processedValues = {
+        ...values,
+        overdueStageRange: values.overdueStage === 'custom' ? values.overdueStageRange : null,
+      };
+      
+      await validateDuplicateRule(processedValues);
       
       if (editingRule) {
         setRules(rules.map(r => 
-          r.id === editingRule.id ? { ...r, ...values, updateTime: new Date().toLocaleString('zh-CN') } : r
+          r.id === editingRule.id ? { ...r, ...processedValues, updateTime: new Date().toLocaleString('zh-CN') } : r
         ));
         message.success('修改成功');
       } else {
         const newRule: AutoAllocationRule = {
-          ...values,
+          ...processedValues,
           id: Date.now().toString(),
           status: 'active',
           createTime: new Date().toLocaleString('zh-CN'),
@@ -186,13 +196,13 @@ const AutoAllocationManagement: React.FC = () => {
 
   const columns: ColumnsType<AutoAllocationRule> = [
     {
-      title: '规则名称',
+      title: t.ruleName,
       dataIndex: 'ruleName',
       key: 'ruleName',
       width: 180,
     },
     {
-      title: '产品类型',
+      title: t.productType,
       dataIndex: 'products',
       key: 'products',
       width: 150,
@@ -205,36 +215,39 @@ const AutoAllocationManagement: React.FC = () => {
       ),
     },
     {
-      title: '逾期阶段',
+      title: t.overdueStage,
       dataIndex: 'overdueStage',
       key: 'overdueStage',
-      width: 80,
-      render: (stage: string) => (
-        <Tag color={stageColors[stage] || 'default'}>{stage}</Tag>
-      ),
+      width: 100,
+      render: (stage: string, record: AutoAllocationRule) => {
+        if (stage === 'custom' && record.overdueStageRange) {
+          return <Tag color="orange">{record.overdueStageRange.start}-{record.overdueStageRange.end}</Tag>;
+        }
+        return <Tag color={stageColors[stage] || 'default'}>{stage}</Tag>;
+      },
     },
     {
-      title: '分配对象',
+      title: t.collectorGroup,
       dataIndex: 'collectorGroup',
       key: 'collectorGroup',
       width: 100,
     },
     {
-      title: '分配方式',
+      title: t.allocationType,
       dataIndex: 'allocationType',
       key: 'allocationType',
       width: 100,
       render: (type: string) => {
         const typeMap: Record<string, string> = {
-          'roundRobin': '轮询分配',
-          'loadBalance': '负载均衡',
-          'random': '随机分配',
+          'roundRobin': t.roundRobin,
+          'loadBalance': t.loadBalance,
+          'random': t.random,
         };
         return typeMap[type] || type;
       },
     },
     {
-      title: '优先级',
+      title: t.priority || 'Priority',
       dataIndex: 'priority',
       key: 'priority',
       width: 80,
@@ -245,31 +258,31 @@ const AutoAllocationManagement: React.FC = () => {
       ),
     },
     {
-      title: '每人最大案件数',
+      title: t.maxCasesPerCollector,
       dataIndex: 'maxCasesPerCollector',
       key: 'maxCasesPerCollector',
       width: 120,
-      render: (count: number | null | undefined) => count !== null && count !== undefined ? `${count} 件` : '-',
+      render: (count: number | null | undefined) => count !== null && count !== undefined ? `${count}` : '-',
     },
     {
-      title: '分案时间',
+      title: t.timeRange,
       key: 'timeRange',
       width: 140,
-      render: (_, record) => `${record.startTime} - ${record.endTime || '不限'}`,
+      render: (_, record) => `${record.startTime} - ${record.endTime || '-'}`,
     },
     {
-      title: '状态',
+      title: t.status,
       dataIndex: 'status',
       key: 'status',
       width: 80,
       render: (status: string) => (
         <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status === 'active' ? '启用' : '禁用'}
+          {status === 'active' ? t.enable : t.disable}
         </Tag>
       ),
     },
     {
-      title: '操作',
+      title: t.action || 'Action',
       key: 'action',
       width: 180,
       render: (_, record) => (
@@ -324,7 +337,7 @@ const AutoAllocationManagement: React.FC = () => {
         </Button>
       </div>
       
-      <Card bordered={false}>
+      <Card variant="borderless">
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col span={6}>
             <Input
@@ -441,11 +454,11 @@ const AutoAllocationManagement: React.FC = () => {
               <Form.Item
                 name="overdueStage"
                 label="逾期阶段"
-                rules={[{ required: true, message: '请选择逾期阶段' }]}
+                rules={[{ required: true, message: '请选择逾期阶段或自定义范围' }]}
               >
                 <Select
                   placeholder="请选择逾期阶段"
-                  options={overdueStages.map(stage => ({ value: stage, label: stage }))}
+                  options={[...overdueStages.map(stage => ({ value: stage, label: stage })), { value: 'custom', label: '自定义范围' }]}
                 />
               </Form.Item>
             </Col>
@@ -462,6 +475,43 @@ const AutoAllocationManagement: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
+          
+          <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.overdueStage !== currentValues.overdueStage}>
+            {({ getFieldValue }) => {
+              const overdueStage = getFieldValue('overdueStage');
+              if (overdueStage === 'custom') {
+                return (
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        name={['overdueStageRange', 'start']}
+                        label="逾期阶段起始"
+                        rules={[{ required: true, message: '请选择起始阶段' }]}
+                      >
+                        <Select
+                          placeholder="请选择起始阶段"
+                          options={overdueStages.map(stage => ({ value: stage, label: stage }))}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name={['overdueStageRange', 'end']}
+                        label="逾期阶段结束"
+                        rules={[{ required: true, message: '请选择结束阶段' }]}
+                      >
+                        <Select
+                          placeholder="请选择结束阶段"
+                          options={overdueStages.map(stage => ({ value: stage, label: stage }))}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                );
+              }
+              return null;
+            }}
+          </Form.Item>
           
           <Form.Item
             name="allocationType"

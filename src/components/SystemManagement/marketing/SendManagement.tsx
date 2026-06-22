@@ -13,8 +13,9 @@ interface SendConfig {
   pushTitle?: string;
   pushBody?: string;
   jumpType?: string;
-  schemaUrl?: string;
+  page?: string;
   h5Url?: string;
+  sendCount?: number;
 }
 
 const MAX_SEND_COUNT = 10000;
@@ -50,8 +51,15 @@ const SendManagement: React.FC = () => {
 
   const jumpTypes = [
     { value: 'home', label: 'APP 首页' },
-    { value: 'schema', label: '指定页面（需配置schema）' },
+    { value: 'page', label: '指定页面' },
     { value: 'h5', label: 'H5链接' },
+  ];
+
+  const pageOptions = [
+    { value: 'home', label: '首页' },
+    { value: 'credit', label: '授信资料提交' },
+    { value: 'loan', label: '申请放款' },
+    { value: 'repayment', label: '还款页面' },
   ];
 
   useEffect(() => {
@@ -108,11 +116,7 @@ const SendManagement: React.FC = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <h3 style={{ margin: 0 }}>发送管理</h3>
-      </div>
-      
-      <Card bordered={false}>
+      <Card variant="borderless">
         <Form form={form} layout="vertical">
           <Form.Item
             name="sendChannel"
@@ -128,156 +132,152 @@ const SendManagement: React.FC = () => {
               }}
             />
           </Form.Item>
-          
+
+          <Form.Item
+            noStyle
+            shouldUpdate={(prev, curr) => prev.sendChannel !== curr.sendChannel}
+          >
+            {() => (
+              sendChannel === 'SMS' ? (
+                <Form.Item
+                  name="templateId"
+                  label="短信模板"
+                  rules={[{ required: true, message: '请选择短信模板' }]}
+                >
+                  <Select
+                    placeholder="请选择短信模板"
+                    options={smsTemplates.map(t => ({ value: t.id, label: t.name }))}
+                  />
+                </Form.Item>
+              ) : (
+                <>
+                  <Form.Item
+                    name="pushName"
+                    label="推送名称"
+                    rules={[{ required: true, message: '请输入推送名称' }]}
+                  >
+                    <Input placeholder="请输入推送名称" />
+                  </Form.Item>
+                  <Form.Item
+                    name="pushTitle"
+                    label="推送标题"
+                    rules={[{ required: true, message: '请输入推送标题' }]}
+                  >
+                    <Input placeholder="请输入推送标题" />
+                  </Form.Item>
+                  <Form.Item
+                    name="pushBody"
+                    label="推送内容"
+                    rules={[{ required: true, message: '请输入推送内容' }]}
+                  >
+                    <Input.TextArea rows={3} placeholder="请输入推送内容" />
+                  </Form.Item>
+                  <Form.Item
+                    name="jumpType"
+                    label="跳转类型"
+                    rules={[{ required: true, message: '请选择跳转类型' }]}
+                  >
+                    <Select
+                      placeholder="请选择跳转类型"
+                      options={jumpTypes}
+                      onChange={(value) => {
+                        setJumpType(value);
+                        form.resetFields(['page', 'h5Url']);
+                      }}
+                    />
+                  </Form.Item>
+                  {jumpType === 'page' && (
+                    <Form.Item
+                      name="page"
+                      label="选择页面"
+                      rules={[{ required: true, message: '请选择页面' }]}
+                    >
+                      <Select
+                        placeholder="请选择页面"
+                        options={pageOptions}
+                      />
+                    </Form.Item>
+                  )}
+                  {jumpType === 'h5' && (
+                    <Form.Item
+                      name="h5Url"
+                      label="H5链接"
+                      rules={[{ required: true, message: '请输入H5链接' }]}
+                    >
+                      <Input placeholder="请输入H5链接" />
+                    </Form.Item>
+                  )}
+                </>
+              )
+            )}
+          </Form.Item>
+
+          <Form.Item
+            name="groupId"
+            label="目标客群"
+            rules={[{ required: true, message: '请选择目标客群' }]}
+          >
+            <Select
+              placeholder="请选择目标客群"
+              options={customerGroups.map(g => ({ value: g.id, label: `${g.name} (${g.count}人)` }))}
+            />
+          </Form.Item>
+
           <Form.Item
             name="sendType"
             label="发送类型"
-            initialValue="immediate"
             rules={[{ required: true, message: '请选择发送类型' }]}
           >
             <Select
               placeholder="请选择发送类型"
               options={sendTypes}
+              onChange={(value) => {
+                if (value === 'immediate') {
+                  form.resetFields(['scheduledTime']);
+                }
+              }}
             />
           </Form.Item>
-          
+
           <Form.Item
-            name="scheduledTime"
-            label="定时时间"
-            rules={[{ 
-              required: ({ getFieldValue }) => getFieldValue('sendType') === 'scheduled', 
-              message: '请选择定时时间' 
-            }]}
+            noStyle
+            shouldUpdate={(prev, curr) => prev.sendType !== curr.sendType}
           >
-            <DatePicker
-              showTime={{ format: 'HH:mm' }}
-              format="YYYY-MM-DD HH:mm"
-              placeholder="请选择定时发送时间"
-              disabledDate={(current) => current && current < dayjs().subtract(1, 'minute')}
-              style={{ width: '100%' }}
-            />
+            {() => {
+              const sendType = form.getFieldValue('sendType');
+              if (sendType === 'scheduled') {
+                return (
+                  <Form.Item
+                    name="scheduledTime"
+                    label="定时时间"
+                    rules={[{ required: true, message: '请选择定时时间' }]}
+                  >
+                    <DatePicker
+                      showTime
+                      format="YYYY-MM-DD HH:mm:ss"
+                      disabledDate={(current) => current && current < dayjs().startOf('day')}
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
+                );
+              }
+              return null;
+            }}
           </Form.Item>
-          
-          <Form.Item
-            name="groupId"
-            label="选择客群"
-            rules={[{ required: true, message: '请选择客群' }]}
-          >
-            <Select
-              placeholder="请选择客群"
-              options={customerGroups.map(group => ({
-                label: `${group.name} (${group.count} 人)`,
-                value: group.id,
-              }))}
-  
-            />
-          </Form.Item>
-          
-          {sendChannel === 'SMS' && (
-            <Form.Item
-              name="templateId"
-              label="选择短信模板"
-              rules={[{ required: true, message: '请选择短信模板' }]}
-            >
-              <Select
-                placeholder="请选择短信模板"
-                options={smsTemplates.map(template => ({
-                  label: template.name,
-                  value: template.id,
-                }))}
-              />
-            </Form.Item>
-          )}
-          
-          {sendChannel === 'Push' && (
-            <>
-              <h4 style={{ marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid #f0f0f0' }}>推送配置</h4>
-              
-              <Form.Item
-                name="pushName"
-                label="推送名称（内部使用）"
-                rules={[{ required: true, message: '请输入推送名称' }]}
-              >
-                <Input placeholder="请输入推送名称" />
-              </Form.Item>
-              
-              <Form.Item
-                name="pushTitle"
-                label="标题（title）"
-                rules={[{ required: true, message: '请输入推送标题' }]}
-              >
-                <Input placeholder="请输入推送标题" />
-              </Form.Item>
-              
-              <Form.Item
-                name="pushBody"
-                label="内容（Body）"
-                rules={[{ required: true, message: '请输入推送内容' }]}
-              >
-                <Input.TextArea
-                  placeholder="请输入推送内容"
-                  rows={4}
-                />
-              </Form.Item>
-              
-              <Form.Item
-                name="jumpType"
-                label="跳转方式"
-                rules={[{ required: true, message: '请选择跳转方式' }]}
-              >
-                <Select
-                  placeholder="请选择跳转方式"
-                  options={jumpTypes}
-                  onChange={(value) => setJumpType(value)}
-                />
-              </Form.Item>
-              
-              {jumpType === 'schema' && (
-                <Form.Item
-                  name="schemaUrl"
-                  label="Schema URL"
-                  rules={[{ required: true, message: '请输入Schema URL' }]}
-                >
-                  <Input placeholder="请输入Schema URL，如：myapp://page/detail?id=1" />
-                </Form.Item>
-              )}
-              
-              {jumpType === 'h5' && (
-                <Form.Item
-                  name="h5Url"
-                  label="H5链接"
-                  rules={[{ required: true, message: '请输入H5链接' }]}
-                >
-                  <Input placeholder="请输入H5链接" />
-                </Form.Item>
-              )}
-            </>
-          )}
-          
-          {sending && (
-            <Form.Item label="发送进度">
-              <Progress percent={Math.round(sendProgress)} status="active" />
-            </Form.Item>
-          )}
-          
+
           <Form.Item>
-            <Space>
-              <Button 
-                type="primary" 
-                icon={<SendOutlined />}
-                onClick={handlePreviewSend}
-                loading={sending}
-              >
-                确认发送
-              </Button>
-              <Button onClick={() => form.resetFields()}>
-                重置
-              </Button>
-            </Space>
+            <Button 
+              type="primary" 
+              icon={<SendOutlined />} 
+              onClick={handlePreviewSend}
+              style={{ marginTop: 16 }}
+            >
+              提交
+            </Button>
           </Form.Item>
         </Form>
       </Card>
-      
+
       <Modal
         title="确认发送"
         open={confirmModalVisible}
@@ -298,14 +298,14 @@ const SendManagement: React.FC = () => {
           <div>
             <strong>发送信息：</strong>
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
-              <li>发送类型：{sendTypes.find(t => t.value === sendConfig?.sendType)?.label}</li>
+              <li>发送类型：{sendTypes.find(s => s.value === sendConfig?.sendType)?.label}</li>
               {sendConfig?.sendType === 'scheduled' && (
                 <li>定时时间：{sendConfig.scheduledTime}</li>
               )}
               <li>发送渠道：{sendChannels.find(c => c.value === sendConfig?.sendChannel)?.label}</li>
               <li>客群：{customerGroups.find(g => g.id === sendConfig?.groupId)?.name}</li>
               {sendChannel === 'SMS' && (
-                <li>模板：{smsTemplates.find(t => t.id === sendConfig?.templateId)?.name}</li>
+                <li>模板：{smsTemplates.find(s => s.id === sendConfig?.templateId)?.name}</li>
               )}
               {sendChannel === 'Push' && sendConfig?.pushName && (
                 <li>推送名称：{sendConfig.pushName}</li>

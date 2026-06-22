@@ -3,6 +3,7 @@ import { Table, Button, Modal, Form, Select, message, Space, Card, Tag, Input, D
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, ReloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
+import { useLanguage } from '../../../i18n/LanguageContext';
 
 interface SendRecord {
   id: string;
@@ -61,6 +62,7 @@ const defaultRecords: SendRecord[] = [
 ];
 
 const SendRecords: React.FC = () => {
+  const { t } = useLanguage();
   const [records, setRecords] = useState<SendRecord[]>(defaultRecords);
   const [resendModalVisible, setResendModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<SendRecord | null>(null);
@@ -107,36 +109,36 @@ const SendRecords: React.FC = () => {
 
   const columns: ColumnsType<SendRecord> = [
     {
-      title: '发送时间',
+      title: t.sendTime,
       dataIndex: 'sendTime',
       key: 'sendTime',
       width: 180,
       sorter: (a, b) => new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime(),
     },
     {
-      title: '发送方式',
+      title: t.sendMethod,
       dataIndex: 'sendMethod',
       key: 'sendMethod',
       width: 100,
       render: (method: string) => (
         <Tag color={method === 'automatic' ? 'blue' : 'green'}>
-          {method === 'automatic' ? '自动发送' : '人工触发'}
+          {method === 'automatic' ? t.automatic : t.manual}
         </Tag>
       ),
     },
     {
-      title: '发送渠道',
+      title: t.sendChannel,
       dataIndex: 'sendChannel',
       key: 'sendChannel',
       width: 80,
       render: (channel: string) => (
         <Tag color={channel === 'SMS' ? 'purple' : 'orange'}>
-          {channel}
+          {channel === 'SMS' ? t.SMS : t.Push}
         </Tag>
       ),
     },
     {
-      title: '发送内容',
+      title: t.sendContent,
       dataIndex: 'content',
       key: 'content',
       width: 300,
@@ -146,21 +148,21 @@ const SendRecords: React.FC = () => {
       ),
     },
     {
-      title: '发送批次编号',
+      title: t.batchNumber,
       dataIndex: 'batchNumber',
       key: 'batchNumber',
       width: 180,
     },
     {
-      title: '发送结果',
+      title: t.sendResult,
       dataIndex: 'sendResult',
       key: 'sendResult',
       width: 100,
       render: (result: string) => {
         const resultMap: Record<string, { text: string, color: string, icon: React.ReactNode }> = {
-          'success': { text: '成功', color: 'green', icon: <CheckCircleOutlined /> },
-          'failed': { text: '失败', color: 'red', icon: <CloseCircleOutlined /> },
-          'partial': { text: '部分成功', color: 'orange', icon: <SendOutlined /> },
+          'success': { text: t.success, color: 'green', icon: <CheckCircleOutlined /> },
+          'failed': { text: t.failed, color: 'red', icon: <CloseCircleOutlined /> },
+          'partial': { text: t.partial, color: 'orange', icon: <SendOutlined /> },
         };
         const resultInfo = resultMap[result];
         return (
@@ -171,25 +173,25 @@ const SendRecords: React.FC = () => {
       },
     },
     {
-      title: '发送数量',
+      title: t.sendCount,
       dataIndex: 'sendCount',
       key: 'sendCount',
       width: 100,
-      render: (count: number) => `${count} 条`,
+      render: (count: number) => `${count} ${t.item}`,
     },
     {
-      title: '失败笔数',
+      title: t.failCount,
       dataIndex: 'failCount',
       key: 'failCount',
       width: 100,
       render: (count: number, record: SendRecord) => (
         <span style={{ color: count > 0 ? 'red' : 'inherit' }}>
-          {count} 条
+          {count} {t.item}
         </span>
       ),
     },
     {
-      title: '成功率',
+      title: t.successRate,
       dataIndex: 'successRate',
       key: 'successRate',
       width: 100,
@@ -200,23 +202,23 @@ const SendRecords: React.FC = () => {
       ),
     },
     {
-      title: '发送状态',
+      title: t.sendStatus,
       dataIndex: 'status',
       key: 'status',
       width: 100,
       render: (status: string) => {
         const statusMap: Record<string, { text: string, color: string }> = {
-          'pending': { text: '待发送', color: 'default' },
-          'sending': { text: '发送中', color: 'blue' },
-          'sent': { text: '已发送', color: 'green' },
-          'failed': { text: '发送失败', color: 'red' },
+          'pending': { text: t.pending, color: 'default' },
+          'sending': { text: t.sending, color: 'blue' },
+          'sent': { text: t.sent, color: 'green' },
+          'failed': { text: t.failed, color: 'red' },
         };
         const statusInfo = statusMap[status];
         return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
       },
     },
     {
-      title: '操作',
+      title: t.action,
       key: 'action',
       width: 120,
       render: (_, record) => (
@@ -227,11 +229,11 @@ const SendRecords: React.FC = () => {
               size="small"
               onClick={() => handleResend(record)}
             >
-              补发
+              {t.resend}
             </Button>
           )}
           {record.failCount === 0 && (
-            <span style={{ color: '#999', fontSize: 12 }}>无需补发</span>
+            <span style={{ color: '#999', fontSize: 12 }}>{t.noNeedResend}</span>
           )}
         </Space>
       ),
@@ -240,14 +242,13 @@ const SendRecords: React.FC = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>发送记录</h3>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
         <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
           刷新
         </Button>
       </div>
       
-      <Card bordered={false}>
+      <Card variant="borderless">
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col span={8}>
             <Input

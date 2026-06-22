@@ -8,18 +8,14 @@ interface ReductionRule {
   id: string;
   name: string;
   product: string;
-  orderStatus: string;
   billStatus: string;
   overdueDaysMin: number;
   overdueDaysMax: number | null;
-  originalAmountMin: number;
-  originalAmountMax: number | null;
   reductionType: 'fixed' | 'percentage';
   principalReduction: number; // 本金减免比例或金额
   interestReduction: number; // 利息减免比例或金额
   serviceFeeReduction: number; // 服务费减免比例或金额
   penaltyReduction: number; // 罚息减免比例或金额
-  maxReductionAmount: number;
   enabled: boolean;
   createTime: string;
   createBy: string;
@@ -28,60 +24,48 @@ interface ReductionRule {
 const defaultRules: ReductionRule[] = [
   {
     id: '1',
-    name: 'M1阶段小额减免',
+    name: 'M1阶段减免',
     product: '消费贷',
-    orderStatus: '逾期',
     billStatus: '逾期',
     overdueDaysMin: 1,
     overdueDaysMax: 30,
-    originalAmountMin: 0,
-    originalAmountMax: 10000,
     reductionType: 'fixed',
     principalReduction: 100,
     interestReduction: 50,
     serviceFeeReduction: 30,
     penaltyReduction: 20,
-    maxReductionAmount: 500,
     enabled: true,
     createTime: '2024-03-01 10:00:00',
     createBy: '管理员',
   },
   {
     id: '2',
-    name: 'M2阶段大额减免',
+    name: 'M2阶段减免',
     product: '消费贷',
-    orderStatus: '逾期',
     billStatus: '逾期',
     overdueDaysMin: 31,
     overdueDaysMax: 60,
-    originalAmountMin: 10000,
-    originalAmountMax: null,
     reductionType: 'percentage',
     principalReduction: 2,
     interestReduction: 10,
     serviceFeeReduction: 15,
     penaltyReduction: 20,
-    maxReductionAmount: 2000,
     enabled: true,
     createTime: '2024-03-01 10:00:00',
     createBy: '管理员',
   },
   {
     id: '3',
-    name: 'M3阶段特殊减免',
+    name: 'M3阶段减免',
     product: '消费贷',
-    orderStatus: '逾期',
     billStatus: '逾期',
     overdueDaysMin: 61,
     overdueDaysMax: null,
-    originalAmountMin: 0,
-    originalAmountMax: null,
     reductionType: 'fixed',
     principalReduction: 200,
     interestReduction: 150,
     serviceFeeReduction: 100,
     penaltyReduction: 50,
-    maxReductionAmount: 5000,
     enabled: false,
     createTime: '2024-03-01 10:00:00',
     createBy: '管理员',
@@ -98,6 +82,7 @@ const ReductionRuleConfig: React.FC = () => {
   const handleAdd = () => {
     setEditingRule(null);
     form.resetFields();
+    form.setFieldsValue({ billStatus: '逾期' });
     setModalVisible(true);
   };
 
@@ -109,19 +94,19 @@ const ReductionRuleConfig: React.FC = () => {
 
   const handleDelete = (ruleId: string) => {
     setRules(rules.filter(rule => rule.id !== ruleId));
-    message.success('减免规则删除成功');
+    message.success(t.reductionRuleDeleted);
   };
 
   const handleSubmit = () => {
     form.validateFields().then(values => {
       if (editingRule) {
-        const updatedRules = rules.map(rule => 
-          rule.id === editingRule.id 
+        const updatedRules = rules.map(rule =>
+          rule.id === editingRule.id
             ? { ...rule, ...values, id: rule.id, createTime: rule.createTime, createBy: rule.createBy }
             : rule
         );
         setRules(updatedRules);
-        message.success('减免规则编辑成功');
+        message.success(t.reductionRuleEdited);
       } else {
         const newRule: ReductionRule = {
           id: (rules.length + 1).toString(),
@@ -130,7 +115,7 @@ const ReductionRuleConfig: React.FC = () => {
           createBy: '当前用户', // 实际项目中应该从登录信息获取
         };
         setRules([...rules, newRule]);
-        message.success('减免规则创建成功');
+        message.success(t.addSuccess);
       }
       setModalVisible(false);
     });
@@ -138,49 +123,33 @@ const ReductionRuleConfig: React.FC = () => {
 
   const columns: ColumnsType<ReductionRule> = [
     {
-      title: '规则名称',
+      title: t.ruleName,
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: '产品',
+      title: t.product,
       dataIndex: 'product',
       key: 'product',
     },
     {
-      title: '订单状态',
-      dataIndex: 'orderStatus',
-      key: 'orderStatus',
-    },
-    {
-      title: '账单状态',
+      title: t.billStatus,
       dataIndex: 'billStatus',
       key: 'billStatus',
     },
     {
-      title: '逾期天数',
+      title: t.overdueDays,
       dataIndex: ['overdueDaysMin', 'overdueDaysMax'],
       key: 'overdueDays',
       render: (_, record) => {
         if (record.overdueDaysMax === null) {
-          return `${record.overdueDaysMin}+天`;
+          return `${record.overdueDaysMin}+ ${t.day}`;
         }
-        return `${record.overdueDaysMin}-${record.overdueDaysMax}天`;
+        return `${record.overdueDaysMin}-${record.overdueDaysMax} ${t.day}`;
       },
     },
     {
-      title: '金额范围',
-      dataIndex: ['originalAmountMin', 'originalAmountMax'],
-      key: 'amountRange',
-      render: (_, record) => {
-        if (record.originalAmountMax === null) {
-          return `¥${record.originalAmountMin.toLocaleString()}+`;
-        }
-        return `¥${record.originalAmountMin.toLocaleString()}-¥${record.originalAmountMax.toLocaleString()}`;
-      },
-    },
-    {
-      title: '本金减免',
+      title: t.principalReduction,
       dataIndex: ['reductionType', 'principalReduction'],
       key: 'principalReduction',
       width: 120,
@@ -192,7 +161,7 @@ const ReductionRuleConfig: React.FC = () => {
       },
     },
     {
-      title: '利息减免',
+      title: t.interestReduction,
       dataIndex: ['reductionType', 'interestReduction'],
       key: 'interestReduction',
       width: 120,
@@ -204,7 +173,7 @@ const ReductionRuleConfig: React.FC = () => {
       },
     },
     {
-      title: '服务费减免',
+      title: t.serviceFeeReduction,
       dataIndex: ['reductionType', 'serviceFeeReduction'],
       key: 'serviceFeeReduction',
       width: 120,
@@ -216,7 +185,7 @@ const ReductionRuleConfig: React.FC = () => {
       },
     },
     {
-      title: '罚息减免',
+      title: t.penaltyReduction,
       dataIndex: ['reductionType', 'penaltyReduction'],
       key: 'penaltyReduction',
       width: 120,
@@ -228,50 +197,44 @@ const ReductionRuleConfig: React.FC = () => {
       },
     },
     {
-      title: '最大减免',
-      dataIndex: 'maxReductionAmount',
-      key: 'maxReductionAmount',
-      render: (amount: number) => `¥${amount.toLocaleString()}`,
-    },
-    {
-      title: '状态',
+      title: t.status,
       dataIndex: 'enabled',
       key: 'enabled',
       render: (enabled: boolean) => (
         <Tag color={enabled ? 'green' : 'red'}>
-          {enabled ? '启用' : '禁用'}
+          {enabled ? t.enabled : t.disabled}
         </Tag>
       ),
     },
     {
-      title: '创建时间',
+      title: t.createTime,
       dataIndex: 'createTime',
       key: 'createTime',
     },
     {
-      title: '操作',
+      title: t.action,
       key: 'action',
       render: (_, record) => (
         <Space size="middle">
-          <Button 
-            type="link" 
+          <Button
+            type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
-            编辑
+            {t.edit}
           </Button>
           <Popconfirm
-            title="确定要删除这个减免规则吗？"
+            title={t.deleteConfirmTitle}
             onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okText={t.confirm}
+            cancelText={t.cancel}
           >
-            <Button 
-              type="link" 
-              danger 
+            <Button
+              type="link"
+              danger
               icon={<DeleteOutlined />}
             >
-              删除
+              {t.delete}
             </Button>
           </Popconfirm>
         </Space>
@@ -282,9 +245,9 @@ const ReductionRuleConfig: React.FC = () => {
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>减免规则配置</h2>
+        <h2 style={{ margin: 0 }}>{t.reductionRuleConfig}</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          添加减免规则
+          {t.addReductionRule}
         </Button>
       </div>
       <Card>
@@ -304,145 +267,113 @@ const ReductionRuleConfig: React.FC = () => {
 
       {/* 减免规则编辑模态框 */}
       <Modal
-        title={editingRule ? '编辑减免规则' : '添加减免规则'}
+        title={editingRule ? t.editReductionRule : t.addReductionRule}
         open={modalVisible}
         onOk={handleSubmit}
         onCancel={() => setModalVisible(false)}
-        width={700}
+        width={600}
       >
         <Form form={form} layout="vertical">
           <Form.Item
             name="name"
-            label="规则名称"
-            rules={[{ required: true, message: '请输入规则名称' }]}
+            label={t.ruleName}
+            rules={[{ required: true, message: t.pleaseInputRuleName }]}
           >
-            <Input placeholder="请输入规则名称" />
+            <Input placeholder={t.ruleName} />
           </Form.Item>
           <Form.Item
             name="product"
-            label="产品"
-            rules={[{ required: true, message: '请选择产品' }]}
+            label={t.product}
+            rules={[{ required: true, message: t.pleaseSelectProduct }]}
           >
-            <Select placeholder="请选择产品">
-              <Select.Option value="消费贷">消费贷</Select.Option>
-              <Select.Option value="经营贷">经营贷</Select.Option>
-              <Select.Option value="房贷">房贷</Select.Option>
-              <Select.Option value="车贷">车贷</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="orderStatus"
-            label="订单状态"
-            rules={[{ required: true, message: '请选择订单状态' }]}
-          >
-            <Select placeholder="请选择订单状态">
-              <Select.Option value="逾期">逾期</Select.Option>
-              <Select.Option value="正常">正常</Select.Option>
+            <Select placeholder={t.pleaseSelectProduct}>
+              <Select.Option value="消费贷">{t.consumerLoan}</Select.Option>
+              <Select.Option value="经营贷">{t.businessLoan}</Select.Option>
+              <Select.Option value="房贷">{t.homeLoan}</Select.Option>
+              <Select.Option value="车贷">{t.carLoan}</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item
             name="billStatus"
-            label="账单状态"
-            rules={[{ required: true, message: '请选择账单状态' }]}
+            label={t.billStatus}
+            rules={[{ required: true, message: t.pleaseSelectBillStatus }]}
           >
-            <Select placeholder="请选择账单状态">
-              <Select.Option value="逾期">逾期</Select.Option>
-              <Select.Option value="正常">正常</Select.Option>
+            <Select placeholder={t.pleaseSelectBillStatus}>
+              <Select.Option value="逾期">{t.isOverdue}</Select.Option>
+              <Select.Option value="正常">{t.normalStatus}</Select.Option>
             </Select>
           </Form.Item>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             <Form.Item
               name="overdueDaysMin"
-              label="逾期天数（最小）"
-              rules={[{ required: true, message: '请输入最小逾期天数' }]}
+              label={t.minOverdueDays}
+              rules={[{ required: true, message: t.pleaseInputMinOverdueDays }]}
             >
-              <InputNumber min={0} placeholder="最小逾期天数" style={{ width: '100%' }} />
+              <InputNumber min={0} placeholder={t.minOverdueDays} style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item
               name="overdueDaysMax"
-              label="逾期天数（最大）"
+              label={t.maxOverdueDays}
             >
-              <InputNumber min={0} placeholder="最大逾期天数（留空表示无上限）" style={{ width: '100%' }} />
-            </Form.Item>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-            <Form.Item
-              name="originalAmountMin"
-              label="金额范围（最小）"
-              rules={[{ required: true, message: '请输入最小金额' }]}
-            >
-              <InputNumber min={0} placeholder="最小金额" style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item
-              name="originalAmountMax"
-              label="金额范围（最大）"
-            >
-              <InputNumber min={0} placeholder="最大金额（留空表示无上限）" style={{ width: '100%' }} />
+              <InputNumber min={0} placeholder={t.maxOverdueDays} style={{ width: '100%' }} />
             </Form.Item>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             <Form.Item
               name="reductionType"
-              label="减免方式"
-              rules={[{ required: true, message: '请选择减免方式' }]}
+              label={t.reductionMethod}
+              rules={[{ required: true, message: t.pleaseSelectReductionMethod }]}
             >
-              <Select placeholder="请选择减免方式">
-                <Select.Option value="fixed">固定金额</Select.Option>
-                <Select.Option value="percentage">百分比</Select.Option>
+              <Select placeholder={t.reductionMethod}>
+                <Select.Option value="fixed">{t.fixedAmount}</Select.Option>
+                <Select.Option value="percentage">{t.percentage}</Select.Option>
               </Select>
             </Form.Item>
           </div>
-          
+
           <div style={{ marginBottom: 16 }}>
-            <h4 style={{ marginBottom: 12, color: '#333' }}>减免明细</h4>
+            <h4 style={{ marginBottom: 12, color: '#333' }}>{t.reductionDetails}</h4>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <Form.Item
                 name="principalReduction"
-                label="本金减免"
-                rules={[{ required: true, message: '请输入本金减免' }]}
+                label={t.principalReduction}
+                rules={[{ required: true, message: t.pleaseInputPrincipalReduction }]}
               >
-                <InputNumber min={0} placeholder="本金减免" style={{ width: '100%' }} />
+                <InputNumber min={0} placeholder={t.principalReduction} style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="interestReduction"
-                label="利息减免"
-                rules={[{ required: true, message: '请输入利息减免' }]}
+                label={t.interestReduction}
+                rules={[{ required: true, message: t.pleaseInputInterestReduction }]}
               >
-                <InputNumber min={0} placeholder="利息减免" style={{ width: '100%' }} />
+                <InputNumber min={0} placeholder={t.interestReduction} style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="serviceFeeReduction"
-                label="服务费减免"
-                rules={[{ required: true, message: '请输入服务费减免' }]}
+                label={t.serviceFeeReduction}
+                rules={[{ required: true, message: t.pleaseInputServiceFeeReduction }]}
               >
-                <InputNumber min={0} placeholder="服务费减免" style={{ width: '100%' }} />
+                <InputNumber min={0} placeholder={t.serviceFeeReduction} style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="penaltyReduction"
-                label="罚息减免"
-                rules={[{ required: true, message: '请输入罚息减免' }]}
+                label={t.penaltyReduction}
+                rules={[{ required: true, message: t.pleaseInputPenaltyReduction }]}
               >
-                <InputNumber min={0} placeholder="罚息减免" style={{ width: '100%' }} />
+                <InputNumber min={0} placeholder={t.penaltyReduction} style={{ width: '100%' }} />
               </Form.Item>
             </div>
             <p style={{ color: '#666', fontSize: '12px', marginTop: 8 }}>
-              {form.getFieldValue('reductionType') === 'fixed' ? '单位：元' : '单位：%'}
+              {form.getFieldValue('reductionType') === 'fixed' ? t.unitCurrency : t.unitPercent}
             </p>
           </div>
           <Form.Item
-            name="maxReductionAmount"
-            label="最大减免金额"
-            rules={[{ required: true, message: '请输入最大减免金额' }]}
-          >
-            <InputNumber min={0} placeholder="最大减免金额" style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item
             name="enabled"
-            label="状态"
+            label={t.status}
           >
-            <Select placeholder="请选择状态">
-              <Select.Option value={true}>启用</Select.Option>
-              <Select.Option value={false}>禁用</Select.Option>
+            <Select placeholder={t.pleaseSelect}>
+              <Select.Option value={true}>{t.enabled}</Select.Option>
+              <Select.Option value={false}>{t.disabled}</Select.Option>
             </Select>
           </Form.Item>
         </Form>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   Card, 
   Tabs, 
@@ -337,23 +337,23 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     },
   ];
 
-  // 账单数据 - 模拟2笔6期的订单
+  // 账单数据 - 模拟2笔6期的订单（测试数据：多期未还款，便于测试期次多选和金额调整）
   const bills: Bill[] = [
-    // 订单1: ORD001 (6期)
-    { id: 'B001', orderId: 'ORD001', billNumber: 'INV-2024-0115', installments: 'Month 1', dueDate: '15 Jan 2024', amount: 2000000, paidAmount: 2000000, status: 'paid' },
-    { id: 'B002', orderId: 'ORD001', billNumber: 'INV-2024-0215', installments: 'Month 2', dueDate: '15 Feb 2024', amount: 2000000, paidAmount: 2000000, status: 'paid' },
-    { id: 'B003', orderId: 'ORD001', billNumber: 'INV-2024-0315', installments: 'Month 3', dueDate: '15 Mar 2024', amount: 2000000, paidAmount: 2000000, status: 'paid' },
-    { id: 'B004', orderId: 'ORD001', billNumber: 'INV-2024-0415', installments: 'Month 4', dueDate: '15 Apr 2024', amount: 2000000, paidAmount: 2000000, status: 'paid' },
-    { id: 'B005', orderId: 'ORD001', billNumber: 'INV-2024-0515', installments: 'Month 5', dueDate: '15 May 2024', amount: 2200000, paidAmount: 0, status: 'overdue' },
-    { id: 'B006', orderId: 'ORD001', billNumber: 'INV-2024-0615', installments: 'Month 6', dueDate: '15 Jun 2024', amount: 2200000, paidAmount: 0, status: 'unpaid' },
+    // 订单1: ORD001 (6期) - 前2期已还，后4期逾期/未还
+    { id: 'B001', orderId: 'ORD001', billNumber: 'INV-2024-0115', installments: 'Month 1', dueDate: '15 Jan 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B002', orderId: 'ORD001', billNumber: 'INV-2024-0215', installments: 'Month 2', dueDate: '15 Feb 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B003', orderId: 'ORD001', billNumber: 'INV-2024-0315', installments: 'Month 3', dueDate: '15 Mar 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B004', orderId: 'ORD001', billNumber: 'INV-2024-0415', installments: 'Month 4', dueDate: '15 Apr 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B005', orderId: 'ORD001', billNumber: 'INV-2024-0515', installments: 'Month 5', dueDate: '15 May 2024', amount: 2800000, paidAmount: 0, status: 'overdue', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
+    { id: 'B006', orderId: 'ORD001', billNumber: 'INV-2024-0615', installments: 'Month 6', dueDate: '15 Jun 2024', amount: 2800000, paidAmount: 0, status: 'unpaid', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
     
-    // 订单2: ORD002 (6期)
-    { id: 'B007', orderId: 'ORD002', billNumber: 'INV-2024-0701', installments: 'Month 1', dueDate: '01 Jul 2024', amount: 1800000, paidAmount: 0, status: 'unpaid' },
-    { id: 'B008', orderId: 'ORD002', billNumber: 'INV-2024-0801', installments: 'Month 2', dueDate: '01 Aug 2024', amount: 1800000, paidAmount: 0, status: 'unpaid' },
-    { id: 'B009', orderId: 'ORD002', billNumber: 'INV-2024-0901', installments: 'Month 3', dueDate: '01 Sep 2024', amount: 1800000, paidAmount: 0, status: 'unpaid' },
-    { id: 'B010', orderId: 'ORD002', billNumber: 'INV-2024-1001', installments: 'Month 4', dueDate: '01 Oct 2024', amount: 1800000, paidAmount: 0, status: 'unpaid' },
-    { id: 'B011', orderId: 'ORD002', billNumber: 'INV-2024-1101', installments: 'Month 5', dueDate: '01 Nov 2024', amount: 1800000, paidAmount: 0, status: 'unpaid' },
-    { id: 'B012', orderId: 'ORD002', billNumber: 'INV-2024-1201', installments: 'Month 6', dueDate: '01 Dec 2024', amount: 1800000, paidAmount: 0, status: 'unpaid' },
+    // 订单2: ORD002 (6期) - 全部未还，便于测试多选
+    { id: 'B007', orderId: 'ORD002', billNumber: 'INV-2024-0701', installments: 'Month 1', dueDate: '01 Jul 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
+    { id: 'B008', orderId: 'ORD002', billNumber: 'INV-2024-0801', installments: 'Month 2', dueDate: '01 Aug 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
+    { id: 'B009', orderId: 'ORD002', billNumber: 'INV-2024-0901', installments: 'Month 3', dueDate: '01 Sep 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
+    { id: 'B010', orderId: 'ORD002', billNumber: 'INV-2024-1001', installments: 'Month 4', dueDate: '01 Oct 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
+    { id: 'B011', orderId: 'ORD002', billNumber: 'INV-2024-1101', installments: 'Month 5', dueDate: '01 Nov 2024', amount: 3200000, paidAmount: 0, status: 'unpaid', principal: 2500000, interest: 400000, serviceFee: 200000, penalty: 100000 },
+    { id: 'B012', orderId: 'ORD002', billNumber: 'INV-2024-1201', installments: 'Month 6', dueDate: '01 Dec 2024', amount: 3200000, paidAmount: 0, status: 'unpaid', principal: 2500000, interest: 400000, serviceFee: 200000, penalty: 100000 },
   ];
 
   // VA码数据
@@ -398,18 +398,83 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     completedTime?: string;
   }
 
-  // 减免申请记录（模拟）
+  // 减免申请记录（模拟）- 覆盖整个流程状态
   const [reductionApplications, setReductionApplications] = useState<ReductionApplication[]>([
+    // 状态1: Pending - 待审核（可测试审核流程）
     {
       id: 'RA001',
-      applicationId: 'RED-20240508-001',
+      applicationId: 'RED-20240525-001',
       billIds: ['B005', 'B006'],
       totalAmount: 4400000,
       requestedReduction: 660000,
       approvedReduction: 0,
-      reason: 'Customer requested reduction due to financial hardship',
+      reason: 'Customer experienced job loss and unable to pay full amount',
       status: 'pending',
-      applyTime: '08 May 2024, 14:20',
+      applyTime: '25 May 2024, 10:30',
+    },
+    // 状态2: Approved - 已批准但未生成还款码（可测试生成还款码）
+    {
+      id: 'RA002',
+      applicationId: 'RED-20240524-001',
+      billIds: ['B007', 'B008'],
+      totalAmount: 3600000,
+      requestedReduction: 540000,
+      approvedReduction: 540000,
+      reason: 'Customer has medical emergency, approved full reduction request',
+      status: 'approved',
+      applyTime: '24 May 2024, 15:45',
+      reviewTime: '24 May 2024, 16:30',
+      reviewer: 'Ahmad Rizal (Supervisor)',
+      reviewComment: 'Approved as per M2 reduction rules',
+    },
+    // 状态3: Approved + Payment Code - 已批准且生成还款码（可测试确认还款）
+    {
+      id: 'RA003',
+      applicationId: 'RED-20240520-001',
+      billIds: ['B009', 'B010', 'B011'],
+      totalAmount: 5400000,
+      requestedReduction: 810000,
+      approvedReduction: 700000,
+      reason: 'Customer negotiated for partial reduction',
+      status: 'approved',
+      applyTime: '20 May 2024, 09:15',
+      reviewTime: '20 May 2024, 11:00',
+      reviewer: 'Ahmad Rizal (Supervisor)',
+      reviewComment: 'Approved 700K reduction based on customer situation',
+      paymentCode: 'VA-20240521-001',
+    },
+    // 状态4: Completed - 已完成（用户已还款，案件平账）
+    {
+      id: 'RA004',
+      applicationId: 'RED-20240515-001',
+      billIds: ['B005'],
+      totalAmount: 2200000,
+      requestedReduction: 330000,
+      approvedReduction: 300000,
+      reason: 'Customer paid early, granted small reduction',
+      status: 'completed',
+      applyTime: '15 May 2024, 14:00',
+      reviewTime: '15 May 2024, 14:30',
+      reviewer: 'Ahmad Rizal (Supervisor)',
+      reviewComment: 'Approved for early payment incentive',
+      paymentCode: 'VA-20240515-001',
+      paymentTime: '16 May 2024, 09:20',
+      completedTime: '16 May 2024, 09:25',
+    },
+    // 状态5: Rejected - 已驳回（可测试驳回流程）
+    {
+      id: 'RA005',
+      applicationId: 'RED-20240518-001',
+      billIds: ['B012'],
+      totalAmount: 1800000,
+      requestedReduction: 270000,
+      approvedReduction: 0,
+      reason: 'Customer wants reduction without valid reason',
+      status: 'rejected',
+      applyTime: '18 May 2024, 11:20',
+      reviewTime: '18 May 2024, 13:00',
+      reviewer: 'Ahmad Rizal (Supervisor)',
+      reviewComment: 'Rejected - no valid reason provided, bill not overdue yet',
     },
   ]);
 
@@ -421,11 +486,19 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     description: 'Maximum 30% reduction for bills overdue more than 30 days',
   };
 
-  // 请求减免金额
-  const [requestedReductionAmount, setRequestedReductionAmount] = useState<number>(0);
+  // 请求减免金额（按科目拆分）
+  const [reductionByCategory, setReductionByCategory] = useState<Record<string, number>>({
+    principal: 0,
+    interest: 0,
+    serviceFee: 0,
+    penalty: 0,
+  });
   
   // 减免申请理由
   const [reductionReason, setReductionReason] = useState<string>('');
+  
+  // 当前选中的期次
+  const [selectedInstallments, setSelectedInstallments] = useState<string[]>([]);
 
   // 状态管理
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -461,6 +534,23 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     return Math.floor(totalUnpaid * (reductionRules.maxReductionPercent / 100));
   }, [bills]);
 
+  // 计算选中期次中各科目的最大可减免金额
+  const categoryMaxAmounts = useMemo(() => {
+    const selectedBillIds = selectedInstallments.map(inst => {
+      const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
+      return bill?.id;
+    }).filter(Boolean) as string[];
+
+    const selectedBillsData = bills.filter(b => selectedBillIds.includes(b.id));
+    
+    return {
+      penalty: selectedBillsData.reduce((sum, bill) => sum + (bill.penalty || 0), 0),
+      serviceFee: selectedBillsData.reduce((sum, bill) => sum + (bill.serviceFee || 0), 0),
+      interest: selectedBillsData.reduce((sum, bill) => sum + (bill.interest || 0), 0),
+      principal: selectedBillsData.reduce((sum, bill) => sum + (bill.principal || 0), 0),
+    };
+  }, [selectedInstallments, bills]);
+
   // 检查是否符合减免条件
   const canApplyReduction = useMemo(() => {
     const overdueBills = bills.filter(b => b.status === 'overdue');
@@ -487,33 +577,30 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
   }, [selectedBills, bills]);
 
   // 处理账单选择（确保选择最早的未结清账单及后续账单）
-  const handleBillSelection = (billId: string) => {
+  const handleBillSelection = useCallback((billId: string) => {
     const billIndex = bills.findIndex(b => b.id === billId);
     if (billIndex === -1) return;
 
     setSelectedBills(prev => {
       if (prev.includes(billId)) {
-        // 取消选择时，也取消选择比它晚的所有账单
         const selectedIndex = prev.indexOf(billId);
         return prev.slice(0, selectedIndex);
       } else {
-        // 选择时，选择从最早未结清账单到当前账单的所有账单
         const unpaidStartIndex = bills.findIndex(b => b.status !== 'paid');
         if (unpaidStartIndex === -1) return prev;
         const newSelected = bills.slice(unpaidStartIndex, billIndex + 1).map(b => b.id);
         return newSelected;
       }
     });
-  };
+  }, [bills]);
 
   // 创建VA码
-  const handleCreateVA = () => {
+  const handleCreateVA = useCallback(() => {
     if (selectedBills.length === 0) {
       message.warning('请先选择账单');
       return;
     }
     
-    // 检查是否跨订单选择
     const selectedOrders = new Set(selectedBills.map(billId => {
       const bill = bills.find(b => b.id === billId);
       return bill?.orderId;
@@ -532,18 +619,27 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     setVaModalVisible(false);
     setSelectedBills([]);
     setSelectedBank('');
-  };
+  }, [selectedBills, bills, selectedChannel, selectedBank, selectedBillsTotal]);
 
   // 申请减免
-  const handleApplyReduction = () => {
-    // 检查是否跨订单选择
-    const selectedOrders = new Set(selectedBills.map(billId => {
+  const handleApplyReduction = useCallback(() => {
+    if (selectedInstallments.length === 0) {
+      message.error('请选择要申请减免的期次');
+      return;
+    }
+    
+    const selectedBillIds = selectedInstallments.map(inst => {
+      const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
+      return bill?.id;
+    }).filter(Boolean) as string[];
+    
+    const selectedOrders = new Set(selectedBillIds.map(billId => {
       const bill = bills.find(b => b.id === billId);
       return bill?.orderId;
     }));
     
     if (selectedOrders.size > 1) {
-      message.error('不允许跨订单申请减免，请只选择同一订单的账单');
+      message.error('不允许跨订单申请减免，请只选择同一订单的期次');
       return;
     }
     
@@ -552,13 +648,24 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
       return;
     }
     
-    // 创建新的减免申请记录
+    const totalAmount = selectedInstallments.reduce((sum, inst) => {
+      const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
+      return sum + (bill?.amount || 0);
+    }, 0);
+    
+    const requestedReduction = Object.values(reductionByCategory).reduce((sum, val) => sum + val, 0);
+    
+    if (requestedReduction === 0) {
+      message.error('请输入减免金额');
+      return;
+    }
+    
     const newApplication: ReductionApplication = {
       id: `RA${Date.now()}`,
       applicationId: `RED-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`,
-      billIds: [...selectedBills],
-      totalAmount: selectedBillsTotal,
-      requestedReduction: maxReductionAmount,
+      billIds: selectedBillIds,
+      totalAmount,
+      requestedReduction,
       approvedReduction: 0,
       reason: reductionReason,
       status: 'pending',
@@ -568,9 +675,11 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     
     setReductionApplications(prev => [newApplication, ...prev]);
     setReductionReason('');
+    setSelectedInstallments([]);
+    setReductionByCategory({ principal: 0, interest: 0, serviceFee: 0, penalty: 0 });
     message.success(`减免申请提交成功！申请编号: ${newApplication.applicationId}`);
     setReductionModalVisible(false);
-  };
+  }, [selectedInstallments, bills, reductionReason, reductionByCategory]);
 
   const images = [
     { id: '1', name: 'KTP (身份证)', type: '证件', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=Indonesian%20KTP%20identity%20card%20front%20view%20official%20document&image_size=portrait_4_3' },
@@ -582,43 +691,43 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
   const tabsItems = useMemo(() => [
     {
       key: 'overview',
-      label: 'Overview',
+      label: t.overview,
       children: (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
           {/* Case Summary */}
           <div style={{ gridColumn: 'span 1' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>Case Summary</h3>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>{t.caseSummary}</h3>
             <div style={{ backgroundColor: '#f9fafb', borderRadius: '10px', padding: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e5e7eb' }}>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Loan Type</span>
+                <span style={{ color: '#6b7280', fontSize: '13px' }}>{t.loanType}</span>
                 <span style={{ color: '#1f2937', fontSize: '13px', fontWeight: '500' }}>{caseSummary.loanType}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e5e7eb' }}>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Loan Amount</span>
+                <span style={{ color: '#6b7280', fontSize: '13px' }}>{t.loanAmount}</span>
                 <span style={{ color: '#1f2937', fontSize: '13px', fontWeight: '500' }}>{caseSummary.loanAmount.toLocaleString()} IDR</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e5e7eb' }}>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Disbursement Date</span>
+                <span style={{ color: '#6b7280', fontSize: '13px' }}>{t.disbursementDate}</span>
                 <span style={{ color: '#1f2937', fontSize: '13px', fontWeight: '500' }}>{caseSummary.disbursementDate}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e5e7eb' }}>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Due Date</span>
+                <span style={{ color: '#6b7280', fontSize: '13px' }}>{t.dueDate}</span>
                 <span style={{ color: '#1f2937', fontSize: '13px', fontWeight: '500' }}>{caseSummary.dueDate}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e5e7eb' }}>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Days Past Due</span>
-                <Tag color="red" style={{ fontSize: '12px' }}>{caseSummary.daysPastDue} Days</Tag>
+                <span style={{ color: '#6b7280', fontSize: '13px' }}>{t.daysPastDue}</span>
+                <Tag color="red" style={{ fontSize: '12px' }}>{caseSummary.daysPastDue} {t.day}</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e5e7eb' }}>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Case Status</span>
+                <span style={{ color: '#6b7280', fontSize: '13px' }}>{t.caseStatus}</span>
                 <Tag color="green" style={{ fontSize: '12px' }}>{caseSummary.caseStatus}</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e5e7eb' }}>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Last Payment Date</span>
-                <span style={{ color: '#9ca3af', fontSize: '13px', fontStyle: 'italic' }}>N/A</span>
+                <span style={{ color: '#6b7280', fontSize: '13px' }}>{t.lastPaymentDate}</span>
+                <span style={{ color: '#9ca3af', fontSize: '13px', fontStyle: 'italic' }}>{t.na}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0' }}>
-                <span style={{ color: '#6b7280', fontSize: '13px' }}>Next Action</span>
+                <span style={{ color: '#6b7280', fontSize: '13px' }}>{t.nextAction}</span>
                 <span style={{ color: '#0d4f3c', fontSize: '13px', fontWeight: '500' }}>{caseSummary.nextAction}</span>
               </div>
             </div>
@@ -627,13 +736,13 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
           {/* Recent Activity */}
           <div style={{ gridColumn: 'span 1' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Recent Activity</h3>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{t.recentActivity}</h3>
               <Button 
                 type="text" 
                 style={{ color: '#0d4f3c', fontSize: '12px', padding: '0' }}
                 onClick={() => setActiveTab('collection')}
               >
-                View all activity
+                {t.viewAllActivity}
               </Button>
             </div>
             <List
@@ -773,32 +882,32 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     },
     {
       key: 'repayment',
-      label: 'Repayment Records',
+      label: t.repaymentHistory,
       children: (
         <Table
           dataSource={paymentHistory}
           columns={[
-            { title: 'Payment Date', dataIndex: 'date', key: 'date', width: '120px' },
-            { title: 'Bill Number', dataIndex: 'billNumber', key: 'billNumber', width: '150px' },
-            { title: 'Installments', dataIndex: 'installments', key: 'installments', width: '120px' },
+            { title: t.paymentDate, dataIndex: 'date', key: 'date', width: '120px' },
+            { title: t.billNumber, dataIndex: 'billNumber', key: 'billNumber', width: '150px' },
+            { title: t.installments, dataIndex: 'installments', key: 'installments', width: '120px' },
             { 
-              title: 'Amount', 
+              title: t.amount, 
               dataIndex: 'amount', 
               key: 'amount', 
               width: '150px',
               render: (amount: number) => <span style={{ fontWeight: '500', color: '#0d4f3c' }}>{formatIDR(amount)} IDR</span>
             },
-            { title: 'Payment Channel', dataIndex: 'channel', key: 'channel', width: '150px' },
+            { title: t.paymentChannel, dataIndex: 'channel', key: 'channel', width: '150px' },
             { 
-              title: 'Payment Method', 
+              title: t.paymentMethod, 
               dataIndex: 'method', 
               key: 'method', 
               width: '120px',
               render: (method: string) => <Tag color={method === 'VA' ? 'blue' : 'orange'}>{method}</Tag>
             },
-            { title: 'Payment Code', dataIndex: 'paymentCode', key: 'paymentCode', width: '150px' },
+            { title: t.paymentCode, dataIndex: 'paymentCode', key: 'paymentCode', width: '150px' },
             { 
-              title: 'Transaction No.', 
+              title: t.transactionNo, 
               dataIndex: 'transactionNo', 
               key: 'transactionNo', 
               width: '180px',
@@ -813,7 +922,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     },
     {
       key: 'collection',
-      label: 'Collection Records',
+      label: t.collectionRecords,
       children: (
         <Table
           dataSource={[
@@ -824,11 +933,11 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
             { key: '5', date: '01 May 2024', collector: 'Dewi Anggraini', method: 'SMS', result: 'Sent', duration: '-', recording: false, note: 'Initial reminder' },
           ]}
           columns={[
-            { title: 'Date', dataIndex: 'date', key: 'date', width: '150px' },
-            { title: 'Collector', dataIndex: 'collector', key: 'collector', width: '150px' },
-            { title: 'Method', dataIndex: 'method', key: 'method', width: '100px' },
+            { title: t.paymentDate, dataIndex: 'date', key: 'date', width: '150px' },
+            { title: t.collector, dataIndex: 'collector', key: 'collector', width: '150px' },
+            { title: t.method, dataIndex: 'method', key: 'method', width: '100px' },
             { 
-              title: 'Result', 
+              title: t.result, 
               dataIndex: 'result', 
               key: 'result',
               render: (result: string) => (
@@ -837,9 +946,9 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
                 </Tag>
               )
             },
-            { title: 'Duration', dataIndex: 'duration', key: 'duration', width: '100px' },
+            { title: t.duration, dataIndex: 'duration', key: 'duration', width: '100px' },
             { 
-              title: 'Recording', 
+              title: t.recording, 
               dataIndex: 'recording', 
               key: 'recording', 
               width: '120px',
@@ -851,7 +960,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
                 <span style={{ color: '#9ca3af' }}>N/A</span>
               )
             },
-            { title: 'Note', dataIndex: 'note', key: 'note' },
+            { title: t.note, dataIndex: 'note', key: 'note' },
           ]}
           pagination={{ pageSize: 10 }}
           size="middle"
@@ -867,10 +976,10 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
           <Table
             dataSource={warningLetters}
             columns={[
-              { title: 'Title', dataIndex: 'title', key: 'title' },
-              { title: 'Sent Date', dataIndex: 'sentDate', key: 'sentDate', width: '150px' },
+              { title: t.title, dataIndex: 'title', key: 'title' },
+              { title: t.sentDate, dataIndex: 'sentDate', key: 'sentDate', width: '150px' },
               { 
-                title: 'Status', 
+                title: t.status, 
                 dataIndex: 'status', 
                 key: 'status',
                 width: '120px',
@@ -881,7 +990,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
                 )
               },
               { 
-                title: 'Action', 
+                title: t.action, 
                 key: 'action',
                 width: '150px',
                 render: (_, record: WarningLetter) => (
@@ -952,22 +1061,78 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
                 width: '100px',
                 render: (_, record: Contact) => (
                   <Space>
-                    <Button 
-                      type="link" 
-                      icon={<PhoneOutlined />} 
+                    {/* Call按钮 - 所有类型都显示（仅图标） */}
+                    <button
                       onClick={() => setCallModalVisible(true)}
-                      style={{ padding: 0, height: 'auto', color: '#22c55e' }}
+                      style={{ 
+                        padding: 0, 
+                        backgroundColor: '#22c55e',
+                        borderRadius: '50%',
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(34, 197, 94, 0.3)',
+                      }}
                     >
-                      Call
-                    </Button>
-                    <Button 
-                      type="link" 
-                      icon={<MessageOutlined />} 
-                      onClick={() => setCallModalVisible(true)}
-                      style={{ padding: 0, height: 'auto', color: '#3b82f6' }}
-                    >
-                      Message
-                    </Button>
+                      <PhoneOutlined style={{ color: '#fff', fontSize: '12px' }} />
+                    </button>
+                    
+                    {/* WhatsApp按钮 - 仅个人手机号码显示 */}
+                    {record.type !== 'company' && (
+                      <button
+                        onClick={() => {
+                          let phone = record.phoneNumber.replace(/\s/g, '');
+                          // 添加印度尼西亚国家代码
+                          if (phone.startsWith('0')) {
+                            phone = '62' + phone.slice(1);
+                          } else if (!phone.startsWith('+')) {
+                            phone = '62' + phone;
+                          }
+                          window.open(`https://web.whatsapp.com/send?phone=${phone}`, '_blank');
+                        }}
+                        style={{ 
+                          padding: 0, 
+                          backgroundColor: '#25d366',
+                          borderRadius: '50%',
+                          width: '24px',
+                          height: '24px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: 'none',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(37, 211, 102, 0.3)',
+                        }}
+                      >
+                        <MessageOutlined style={{ color: '#fff', fontSize: '12px' }} />
+                      </button>
+                    )}
+                    
+                    {/* Message按钮 - 仅个人手机号码显示（仅图标） */}
+                    {record.type !== 'company' && (
+                      <button
+                        onClick={() => setCallModalVisible(true)}
+                        style={{ 
+                          padding: 0, 
+                          backgroundColor: '#3b82f6',
+                          borderRadius: '50%',
+                          width: '24px',
+                          height: '24px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: 'none',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)',
+                        }}
+                      >
+                        <SendOutlined style={{ color: '#fff', fontSize: '12px' }} />
+                      </button>
+                    )}
                   </Space>
                 )
               },
@@ -2031,31 +2196,65 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
       <Modal
         title="Apply Reduction"
         open={reductionModalVisible}
-        onCancel={() => setReductionModalVisible(false)}
+        onCancel={() => {
+          setReductionModalVisible(false);
+          setSelectedInstallments([]);
+          setReductionByCategory({ principal: 0, interest: 0, serviceFee: 0, penalty: 0 });
+        }}
         onOk={handleApplyReduction}
-        width={500}
+        width={700}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Select Installments */}
+          <div>
+            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Select Installments <span style={{ color: '#ef4444' }}>*</span></label>
+            <div style={{ backgroundColor: '#f9fafb', borderRadius: '8px', padding: '12px' }}>
+              {(() => {
+                const unpaidBills = bills.filter(b => b.status !== 'paid');
+                const installments = [...new Set(unpaidBills.map(b => b.installments))];
+                return (
+                  <Select
+                    mode="multiple"
+                    placeholder="Select installments to apply reduction"
+                    value={selectedInstallments}
+                    onChange={setSelectedInstallments}
+                    style={{ width: '100%' }}
+                    options={installments.map(inst => ({ value: inst, label: inst }))}
+                  />
+                );
+              })()}
+            </div>
+          </div>
+
           {/* Selected Bills Summary */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Selected Bills ({selectedBills.length})</label>
-            <div style={{ backgroundColor: '#f9fafb', borderRadius: '8px', padding: '12px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {selectedBills.map(billId => {
-                  const bill = bills.find(b => b.id === billId);
-                  return bill ? (
-                    <div key={bill.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '13px', color: '#1f2937' }}>{bill.billNumber}</span>
-                      <span style={{ fontSize: '13px', fontWeight: '500', color: '#0d4f3c' }}>{formatIDR(bill.amount)} IDR</span>
-                    </div>
-                  ) : null;
-                })}
-                <Divider style={{ margin: '8px 0' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#1f2937' }}>
-                  <span>Total Amount</span>
-                  <span style={{ color: '#0d4f3c' }}>{formatIDR(selectedBillsTotal)} IDR</span>
+            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Selected Bills ({selectedInstallments.length})</label>
+            <div style={{ backgroundColor: '#f9fafb', borderRadius: '8px', padding: '12px', maxHeight: '150px', overflowY: 'auto' }}>
+              {selectedInstallments.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {selectedInstallments.map(inst => {
+                    const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
+                    return bill ? (
+                      <div key={inst} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', color: '#1f2937' }}>{bill.billNumber} ({inst})</span>
+                        <span style={{ fontSize: '13px', fontWeight: '500', color: '#0d4f3c' }}>{formatIDR(bill.amount)} IDR</span>
+                      </div>
+                    ) : null;
+                  })}
+                  <Divider style={{ margin: '8px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#1f2937' }}>
+                    <span>Total Amount</span>
+                    <span style={{ color: '#0d4f3c' }}>
+                      {formatIDR(selectedInstallments.reduce((sum, inst) => {
+                        const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
+                        return sum + (bill?.amount || 0);
+                      }, 0))} IDR
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <p style={{ color: '#9ca3af', textAlign: 'center', margin: 0 }}>Please select installments</p>
+              )}
             </div>
           </div>
 
@@ -2070,20 +2269,135 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
             </p>
           </div>
 
-          {/* Requested Amount */}
+          {/* Reduction by Category */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Requested Reduction Amount</label>
-            <Input 
-              type="number" 
-              placeholder="Enter amount"
-              max={maxReductionAmount}
-              onChange={(e) => setRequestedReductionAmount(Math.min(Number(e.target.value) || 0, maxReductionAmount))}
-              value={requestedReductionAmount}
-              style={{ width: '100%' }}
-            />
-            <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#6b7280' }}>
-              Maximum: {formatIDR(maxReductionAmount)} IDR
-            </p>
+            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Reduction by Category</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Principal (本金)</label>
+                <InputNumber
+                  min={0}
+                  max={categoryMaxAmounts.principal}
+                  value={reductionByCategory.principal || undefined}
+                  onChange={(value) => {
+                    const newVal = value || 0;
+                    const currentTotal = (reductionByCategory.interest || 0) + (reductionByCategory.serviceFee || 0) + (reductionByCategory.penalty || 0);
+                    if (newVal <= categoryMaxAmounts.principal && newVal + currentTotal <= maxReductionAmount) {
+                      setReductionByCategory(prev => ({ ...prev, principal: newVal }));
+                    } else {
+                      message.error(`本金减免不能超过 ${formatIDR(categoryMaxAmounts.principal)} IDR`);
+                    }
+                  }}
+                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                  parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
+                  style={{ width: '100%' }}
+                  placeholder={`Max: ${formatIDR(categoryMaxAmounts.principal)}`}
+                  disabled={(
+                    (reductionByCategory.penalty || 0) < categoryMaxAmounts.penalty ||
+                    (reductionByCategory.serviceFee || 0) < categoryMaxAmounts.serviceFee ||
+                    (reductionByCategory.interest || 0) < categoryMaxAmounts.interest
+                  ) || (
+                    (reductionByCategory.penalty || 0) + (reductionByCategory.serviceFee || 0) + (reductionByCategory.interest || 0) >= maxReductionAmount
+                  )}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Interest (利息)</label>
+                <InputNumber
+                  min={0}
+                  max={categoryMaxAmounts.interest}
+                  value={reductionByCategory.interest || undefined}
+                  onChange={(value) => {
+                    const newVal = value || 0;
+                    const currentTotal = (reductionByCategory.principal || 0) + (reductionByCategory.serviceFee || 0) + (reductionByCategory.penalty || 0);
+                    if (newVal <= categoryMaxAmounts.interest && newVal + currentTotal <= maxReductionAmount) {
+                      setReductionByCategory(prev => ({ ...prev, interest: newVal }));
+                    } else {
+                      message.error(`利息减免不能超过 ${formatIDR(categoryMaxAmounts.interest)} IDR`);
+                    }
+                  }}
+                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                  parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
+                  style={{ width: '100%' }}
+                  placeholder={`Max: ${formatIDR(categoryMaxAmounts.interest)}`}
+                  disabled={(
+                    (reductionByCategory.penalty || 0) < categoryMaxAmounts.penalty ||
+                    (reductionByCategory.serviceFee || 0) < categoryMaxAmounts.serviceFee
+                  ) || (
+                    (reductionByCategory.penalty || 0) + (reductionByCategory.serviceFee || 0) >= maxReductionAmount
+                  )}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Service Fee (服务费)</label>
+                <InputNumber
+                  min={0}
+                  max={categoryMaxAmounts.serviceFee}
+                  value={reductionByCategory.serviceFee || undefined}
+                  onChange={(value) => {
+                    const newVal = value || 0;
+                    const currentTotal = (reductionByCategory.principal || 0) + (reductionByCategory.interest || 0) + (reductionByCategory.penalty || 0);
+                    if (newVal <= categoryMaxAmounts.serviceFee && newVal + currentTotal <= maxReductionAmount) {
+                      setReductionByCategory(prev => ({ ...prev, serviceFee: newVal }));
+                    } else {
+                      message.error(`服务费减免不能超过 ${formatIDR(categoryMaxAmounts.serviceFee)} IDR`);
+                    }
+                  }}
+                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                  parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
+                  style={{ width: '100%' }}
+                  placeholder={`Max: ${formatIDR(categoryMaxAmounts.serviceFee)}`}
+                  disabled={(
+                    (reductionByCategory.penalty || 0) < categoryMaxAmounts.penalty
+                  ) || (
+                    (reductionByCategory.penalty || 0) >= maxReductionAmount
+                  )}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Penalty (罚息)</label>
+                <InputNumber
+                  min={0}
+                  max={categoryMaxAmounts.penalty}
+                  value={reductionByCategory.penalty || undefined}
+                  onChange={(value) => {
+                    const newVal = value || 0;
+                    const currentTotal = (reductionByCategory.principal || 0) + (reductionByCategory.interest || 0) + (reductionByCategory.serviceFee || 0);
+                    if (newVal <= categoryMaxAmounts.penalty && newVal + currentTotal <= maxReductionAmount) {
+                      setReductionByCategory(prev => ({ ...prev, penalty: newVal }));
+                    } else {
+                      message.error(`罚息减免不能超过 ${formatIDR(categoryMaxAmounts.penalty)} IDR`);
+                    }
+                  }}
+                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                  parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
+                  style={{ width: '100%' }}
+                  placeholder={`Max: ${formatIDR(categoryMaxAmounts.penalty)}`}
+                  disabled={false}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '8px', fontSize: '11px', color: '#9ca3af', fontStyle: 'italic' }}>
+                减免优先级：罚息 &gt; 服务费 &gt; 利息 &gt; 本金
+              </div>
+          </div>
+          <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f0fdf4', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '500', color: '#065f46' }}>Total Requested Reduction</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: '#059669' }}>
+                  -{formatIDR(Object.values(reductionByCategory).reduce((sum, val) => sum + val, 0))} IDR
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #bbf7d0' }}>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: '#065f46' }}>Amount Payable After Reduction</span>
+                <span style={{ fontSize: '20px', fontWeight: '700', color: '#0d4f3c' }}>
+                  {formatIDR(selectedInstallments.reduce((sum, inst) => {
+                    const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
+                    return sum + (bill?.amount || 0);
+                  }, 0) - Object.values(reductionByCategory).reduce((sum, val) => sum + val, 0))} IDR
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Reason */}
@@ -2103,7 +2417,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
               <strong>Notice:</strong> After submission, the application will be reviewed by the supervisor. Once approved, a payment code will be generated for the customer.
             </div>
           </div>
-        </div>
       </Modal>
 
       {/* Warning Letter Preview Modal */}

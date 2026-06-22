@@ -7,8 +7,9 @@ import { useLanguage } from '../../i18n/LanguageContext';
 interface AssignmentRule {
   id: string;
   name: string;
-  product: string;
+  products: string[];
   overdueStage: string;
+  overdueStageRange: { start: string; end: string } | null;
   team: string;
   collectors: string[];
   distributionMode: 'average' | 'roundRobin' | 'capacity';
@@ -24,8 +25,9 @@ const defaultRules: AssignmentRule[] = [
   {
     id: '1',
     name: '消费贷M1阶段自动分案',
-    product: '消费贷',
+    products: ['消费贷'],
     overdueStage: 'M1',
+    overdueStageRange: null,
     team: '催收一组',
     collectors: ['催收员A', '催收员B'],
     distributionMode: 'average',
@@ -39,8 +41,9 @@ const defaultRules: AssignmentRule[] = [
   {
     id: '2',
     name: '消费贷M2阶段自动分案',
-    product: '消费贷',
+    products: ['消费贷'],
     overdueStage: 'M2',
+    overdueStageRange: null,
     team: '催收二组',
     collectors: ['催收员C', '催收员D'],
     distributionMode: 'roundRobin',
@@ -53,9 +56,10 @@ const defaultRules: AssignmentRule[] = [
   },
   {
     id: '3',
-    name: '经营贷M1阶段自动分案',
-    product: '经营贷',
-    overdueStage: 'M1',
+    name: '经营贷M1-M2阶段自动分案',
+    products: ['经营贷', '消费贷'],
+    overdueStage: 'custom',
+    overdueStageRange: { start: 'M1', end: 'M2' },
     team: '催收三组',
     collectors: ['催收员E'],
     distributionMode: 'capacity',
@@ -114,10 +118,15 @@ const AutoAssignmentConfig: React.FC = () => {
 
   const handleSubmit = () => {
     form.validateFields().then(values => {
+      const processedValues = {
+        ...values,
+        overdueStageRange: values.overdueStage === 'custom' ? values.overdueStageRange : null,
+      };
+      
       if (editingRule) {
         const updatedRules = rules.map(rule => 
           rule.id === editingRule.id 
-            ? { ...rule, ...values, id: rule.id, createTime: rule.createTime, createBy: rule.createBy }
+            ? { ...rule, ...processedValues, id: rule.id, createTime: rule.createTime, createBy: rule.createBy }
             : rule
         );
         setRules(updatedRules);
@@ -125,7 +134,7 @@ const AutoAssignmentConfig: React.FC = () => {
       } else {
         const newRule: AssignmentRule = {
           id: (rules.length + 1).toString(),
-          ...values,
+          ...processedValues,
           createTime: new Date().toISOString().slice(0, 19).replace('T', ' '),
           createBy: '当前用户',
           enabled: true,
@@ -144,34 +153,44 @@ const AutoAssignmentConfig: React.FC = () => {
 
   const columns: ColumnsType<AssignmentRule> = [
     {
-      title: '规则名称',
+      title: t.ruleName,
       dataIndex: 'name',
       key: 'name',
       width: 180,
     },
     {
-      title: '产品',
-      dataIndex: 'product',
-      key: 'product',
-      width: 100,
-    },
-    {
-      title: '逾期阶段',
-      dataIndex: 'overdueStage',
-      key: 'overdueStage',
-      width: 100,
-      render: (stage: string) => (
-        <Tag color="blue">{stage}</Tag>
+      title: t.product,
+      dataIndex: 'products',
+      key: 'products',
+      width: 150,
+      render: (products: string[]) => (
+        <Space size="small" wrap>
+          {products.map((product, index) => (
+            <Tag key={index} color="blue">{product}</Tag>
+          ))}
+        </Space>
       ),
     },
     {
-      title: '分配团队',
+      title: t.overdueStage,
+      dataIndex: 'overdueStage',
+      key: 'overdueStage',
+      width: 120,
+      render: (stage: string, record: AssignmentRule) => {
+        if (stage === 'custom' && record.overdueStageRange) {
+          return <Tag color="orange">{record.overdueStageRange.start}-{record.overdueStageRange.end}</Tag>;
+        }
+        return <Tag color="blue">{stage}</Tag>;
+      },
+    },
+    {
+      title: t.allocationTeam,
       dataIndex: 'team',
       key: 'team',
       width: 120,
     },
     {
-      title: '分配催收员',
+      title: t.allocationCollector,
       dataIndex: 'collectors',
       key: 'collectors',
       width: 150,
@@ -184,34 +203,34 @@ const AutoAssignmentConfig: React.FC = () => {
       ),
     },
     {
-      title: '分配模式',
+      title: t.distributionMode,
       dataIndex: 'distributionMode',
       key: 'distributionMode',
       width: 100,
       render: (mode: string) => {
         const modeMap: Record<string, string> = {
-          'average': '均分',
-          'roundRobin': '轮询',
-          'capacity': '容量',
+          'average': t.average,
+          'roundRobin': t.roundRobin,
+          'capacity': t.capacity,
         };
         return modeMap[mode] || mode;
       },
     },
     {
-      title: '优先级',
+      title: t.priority,
       dataIndex: 'priority',
       key: 'priority',
       width: 80,
     },
     {
-      title: '每人上限',
+      title: t.maxPerCollector,
       dataIndex: 'maxCasesPerCollector',
       key: 'maxCasesPerCollector',
       width: 100,
-      render: (max: number) => `${max}件`,
+      render: (max: number) => `${max}${t.case}`,
     },
     {
-      title: '状态',
+      title: t.status,
       dataIndex: 'enabled',
       key: 'enabled',
       width: 100,
@@ -219,20 +238,20 @@ const AutoAssignmentConfig: React.FC = () => {
         <Switch
           checked={enabled}
           onChange={(checked) => handleToggleStatus(record.id, checked)}
-          checkedChildren="启用"
-          unCheckedChildren="禁用"
+          checkedChildren={t.enabled}
+          unCheckedChildren={t.disabled}
         />
       ),
     },
     {
-      title: '最后执行',
+      title: t.lastExecution,
       dataIndex: 'lastRunTime',
       key: 'lastRunTime',
       width: 150,
-      render: (time: string) => time || '未执行',
+      render: (time: string) => time || t.notExecuted,
     },
     {
-      title: '操作',
+      title: t.action,
       key: 'action',
       width: 200,
       render: (_, record) => (
@@ -318,11 +337,11 @@ const AutoAssignmentConfig: React.FC = () => {
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             <Form.Item
-              name="product"
+              name="products"
               label="产品类型"
-              rules={[{ required: true, message: '请选择产品类型' }]}
+              rules={[{ required: true, message: '请选择至少一个产品类型' }]}
             >
-              <Select placeholder="请选择产品类型">
+              <Select mode="multiple" placeholder="请选择产品类型">
                 {products.map(product => (
                   <Select.Option key={product} value={product}>{product}</Select.Option>
                 ))}
@@ -331,15 +350,51 @@ const AutoAssignmentConfig: React.FC = () => {
             <Form.Item
               name="overdueStage"
               label="逾期阶段"
-              rules={[{ required: true, message: '请选择逾期阶段' }]}
+              rules={[{ required: true, message: '请选择逾期阶段或自定义范围' }]}
             >
               <Select placeholder="请选择逾期阶段">
                 {overdueStages.map(stage => (
                   <Select.Option key={stage} value={stage}>{stage}</Select.Option>
                 ))}
+                <Select.Option key="custom" value="custom">自定义范围</Select.Option>
               </Select>
             </Form.Item>
           </div>
+          
+          <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.overdueStage !== currentValues.overdueStage}>
+            {({ getFieldValue }) => {
+              const overdueStage = getFieldValue('overdueStage');
+              if (overdueStage === 'custom') {
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                    <Form.Item
+                      name={['overdueStageRange', 'start']}
+                      label="逾期阶段起始"
+                      rules={[{ required: true, message: '请选择起始阶段' }]}
+                    >
+                      <Select placeholder="请选择起始阶段">
+                        {overdueStages.map(stage => (
+                          <Select.Option key={stage} value={stage}>{stage}</Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                    <Form.Item
+                      name={['overdueStageRange', 'end']}
+                      label="逾期阶段结束"
+                      rules={[{ required: true, message: '请选择结束阶段' }]}
+                    >
+                      <Select placeholder="请选择结束阶段">
+                        {overdueStages.map(stage => (
+                          <Select.Option key={stage} value={stage}>{stage}</Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          </Form.Item>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             <Form.Item
