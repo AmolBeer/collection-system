@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Select, Button, message, Modal, Alert, Space, Progress, Input, DatePicker } from 'antd';
-import { SendOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Card, Form, Select, Button, message, Modal, Alert, Space, Input, DatePicker } from 'antd';
+import { SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 interface SendConfig {
@@ -22,8 +22,8 @@ const MAX_SEND_COUNT = 10000;
 
 const SendManagement: React.FC = () => {
   const [form] = Form.useForm();
-  const [sending, setSending] = useState(false);
-  const [sendProgress, setSendProgress] = useState(0);
+  const [_sending, setSending] = useState(false);
+  const [_sendProgress, setSendProgress] = useState(0);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [sendConfig, setSendConfig] = useState<SendConfig | null>(null);
   const [sendChannel, setSendChannel] = useState('SMS');

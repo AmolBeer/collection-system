@@ -133,7 +133,6 @@ const AdminDashboard: React.FC = () => {
               value={summaryData.totalCases}
               prefix={<UserOutlined style={{ color: '#0d4f3c' }} />}
               valueStyle={{ color: '#1f2937', fontWeight: '700', fontSize: '28px' }}
-              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
@@ -143,8 +142,7 @@ const AdminDashboard: React.FC = () => {
               title={t.pendingCases}
               value={summaryData.pendingCases}
               prefix={<ClockCircleOutlined style={{ color: '#f97316' }} />}
-              valueStyle={{ color: '#f97316', fontWeight: '700', fontSize: '28px' }}
-              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
+              valueStyle={{ color: '#3b82f6', fontWeight: '700', fontSize: '28px' }}
             />
           </Card>
         </Col>
@@ -155,7 +153,6 @@ const AdminDashboard: React.FC = () => {
               value={summaryData.completedCases}
               prefix={<CheckCircleOutlined style={{ color: '#22c55e' }} />}
               valueStyle={{ color: '#22c55e', fontWeight: '700', fontSize: '28px' }}
-              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
@@ -167,7 +164,6 @@ const AdminDashboard: React.FC = () => {
               suffix="%"
               prefix={<ArrowUpOutlined style={{ color: '#0d4f3c' }} />}
               valueStyle={{ color: '#0d4f3c', fontWeight: '700', fontSize: '28px' }}
-              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>

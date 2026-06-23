@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, message, Space, Tag, Popconfirm, Card, Select, Tooltip } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Space, Tag, Popconfirm, Card, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, StopOutlined, CodeOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../../i18n/LanguageContext';
@@ -202,9 +202,9 @@ const TemplateManagement: React.FC = () => {
           <Form.Item
             name="templateName"
             label={t.templateName}
-            rules={[{ required: true, message: t.pleaseInputTemplateName }]}
+            rules={[{ required: true, message: t.pleaseInput }]}
           >
-            <Input placeholder={t.pleaseInputTemplateName} />
+            <Input placeholder={t.pleaseInput} />
           </Form.Item>
           <Form.Item
             name="content"

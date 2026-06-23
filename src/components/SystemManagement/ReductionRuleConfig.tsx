@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Tag, message, Space, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, FileTextOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface ReductionRule {
@@ -284,9 +284,9 @@ const ReductionRuleConfig: React.FC = () => {
           <Form.Item
             name="product"
             label={t.product}
-            rules={[{ required: true, message: t.pleaseSelectProduct }]}
+            rules={[{ required: true, message: t.selectProduct }]}
           >
-            <Select placeholder={t.pleaseSelectProduct}>
+            <Select placeholder={t.selectProduct}>
               <Select.Option value="消费贷">{t.consumerLoan}</Select.Option>
               <Select.Option value="经营贷">{t.businessLoan}</Select.Option>
               <Select.Option value="房贷">{t.homeLoan}</Select.Option>

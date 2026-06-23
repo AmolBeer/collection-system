@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Select, message, Space, Card, Tag, Input, DatePicker, Row, Col } from 'antd';
+import { Table, Button, Modal, Form, message, Space, Card, Tag, Input, DatePicker, Row, Col } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, ReloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
@@ -63,7 +63,7 @@ const defaultRecords: SendRecord[] = [
 
 const SendRecords: React.FC = () => {
   const { t } = useLanguage();
-  const [records, setRecords] = useState<SendRecord[]>(defaultRecords);
+  const [records] = useState<SendRecord[]>(defaultRecords);
   const [resendModalVisible, setResendModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<SendRecord | null>(null);
   const [resendForm] = Form.useForm();
@@ -109,7 +109,7 @@ const SendRecords: React.FC = () => {
 
   const columns: ColumnsType<SendRecord> = [
     {
-      title: t.sendTime,
+      title: t.sentDate,
       dataIndex: 'sendTime',
       key: 'sendTime',
       width: 180,
@@ -177,16 +177,16 @@ const SendRecords: React.FC = () => {
       dataIndex: 'sendCount',
       key: 'sendCount',
       width: 100,
-      render: (count: number) => `${count} ${t.item}`,
+      render: (count: number) => `${count} ${t.items}`,
     },
     {
       title: t.failCount,
       dataIndex: 'failCount',
       key: 'failCount',
       width: 100,
-      render: (count: number, record: SendRecord) => (
+      render: (count: number) => (
         <span style={{ color: count > 0 ? 'red' : 'inherit' }}>
-          {count} {t.item}
+          {count} {t.items}
         </span>
       ),
     },
@@ -202,14 +202,14 @@ const SendRecords: React.FC = () => {
       ),
     },
     {
-      title: t.sendStatus,
+      title: t.status,
       dataIndex: 'status',
       key: 'status',
       width: 100,
       render: (status: string) => {
         const statusMap: Record<string, { text: string, color: string }> = {
           'pending': { text: t.pending, color: 'default' },
-          'sending': { text: t.sending, color: 'blue' },
+          'sending': { text: t.pending, color: 'blue' },
           'sent': { text: t.sent, color: 'green' },
           'failed': { text: t.failed, color: 'red' },
         };
@@ -263,7 +263,7 @@ const SendRecords: React.FC = () => {
             <DatePicker.RangePicker
               style={{ width: '100%' }}
               value={dateRange}
-              onChange={setDateRange}
+              onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null])}
               placeholder={['开始日期', '结束日期']}
             />
           </Col>

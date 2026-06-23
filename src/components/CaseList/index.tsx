@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Table, Button, Space, Input, Select, Card, Tag, message, Modal, Form, DatePicker, Checkbox } from 'antd';
+import { Table, Button, Space, Select, Card, Tag, message, Modal, Form, DatePicker, Checkbox } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, EyeOutlined, SwapOutlined, PauseCircleOutlined, FilterOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
-import dayjs, { Dayjs } from 'dayjs';
+import { Dayjs } from 'dayjs';
 
 interface Case {
   id: string;
@@ -136,7 +136,6 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
 
   const columns: ColumnsType<Case> = [
     {
-      type: 'checkbox',
       key: 'selection',
       width: 50,
     },
@@ -239,7 +238,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
-      title: t.lastUpdateTime,
+      title: t.updateTime,
       dataIndex: 'lastUpdateTime',
       key: 'lastUpdateTime',
       width: 160,
@@ -285,7 +284,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             onClick={handleAssign}
             style={{ borderRadius: '8px' }}
           >
-            {t.manualAssign}
+            {t.manualAssignment}
           </Button>
           <Button
             type="default"

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Modal, Form, Input, Select, Button, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Select, message } from 'antd';
 
 interface AddContactModalProps {
   visible: boolean;

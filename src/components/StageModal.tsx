@@ -78,10 +78,15 @@ function StageModal({ visible, stage, stages, selectedProductId, onCancel, onSav
 
       const stageData: OverdueStage = {
         id: stage?.id || '',
+        stageCode: stage?.stageCode || '',
         name,
         minDays,
         maxDays: finalMaxDays,
         enabled,
+        createTime: stage?.createTime || new Date().toISOString(),
+        createBy: stage?.createBy || 'admin',
+        updateTime: new Date().toISOString(),
+        updateBy: 'admin',
         productId,
       };
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Tree, message, Space, Tag, Popconfirm } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Tree, message, Space, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface Role {
@@ -229,29 +229,18 @@ const RoleManagement: React.FC = () => {
   ];
 
   const renderPermissionTree = () => {
-    const renderTreeNode = (permission: Permission) => {
-      return (
-        <Tree.TreeNode
-          key={permission.key}
-          title={permission.title}
-          disableCheckbox={!permission.children}
-        >
-          {permission.children?.map(child => renderTreeNode(child))}
-        </Tree.TreeNode>
-      );
-    };
-
     return (
       <Tree
         checkable
-        treeData={permissions.map(permission => renderTreeNode(permission))}
+        treeData={permissions}
         fieldNames={{
           title: 'title',
           key: 'key',
           children: 'children',
         }}
-        onChange={(checkedKeys) => {
-          form.setFieldsValue({ permissions: checkedKeys as string[] });
+        onCheck={(checked: React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] }) => {
+          const keys = Array.isArray(checked) ? checked : checked.checked;
+          form.setFieldsValue({ permissions: keys as string[] });
         }}
       />
     );

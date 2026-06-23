@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Space, Popconfirm, Row, Col, InputNumber, Checkbox, Slider } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Space, Popconfirm, Row, Col, InputNumber } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SendOutlined } from '@ant-design/icons';
-import { useLanguage } from '../../i18n/LanguageContext';
 
 interface OutsourcingConfig {
   id: string;
@@ -58,7 +57,6 @@ const OutsourcingConfig: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingConfig, setEditingConfig] = useState<OutsourcingConfig | null>(null);
   const [form] = Form.useForm();
-  const { t } = useLanguage();
 
   const handleAdd = () => {
     setEditingConfig(null);
@@ -113,7 +111,7 @@ const OutsourcingConfig: React.FC = () => {
     });
   };
 
-  const handlePushCases = (configId: string) => {
+  const handlePushCases = (_configId: string) => {
     message.success('案件推送任务已启动');
   };
 
@@ -355,8 +353,8 @@ const OutsourcingConfig: React.FC = () => {
                     min={0} 
                     placeholder="最小金额" 
                     style={{ width: '100%' }}
-                    formatter={(value) => value?.toLocaleString()}
-                    parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
+                    formatter={(value: number | undefined) => value ? value.toLocaleString() : ''}
+                    parser={(value: string | undefined) => parseFloat(value?.replace(/,/g, '') || '0')}
                   />
                 </Form.Item>
               </Col>
@@ -372,8 +370,8 @@ const OutsourcingConfig: React.FC = () => {
                     min={0} 
                     placeholder="最大金额（选填）" 
                     style={{ width: '100%' }}
-                    formatter={(value) => value?.toLocaleString()}
-                    parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
+                    formatter={(value: number | undefined) => value ? value.toLocaleString() : ''}
+                    parser={(value: string | undefined) => parseFloat(value?.replace(/,/g, '') || '0')}
                   />
                 </Form.Item>
               </Col>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Space, Avatar, Badge, Tooltip, Dropdown, Select } from 'antd';
+import { Layout, Menu, Button, Avatar, Tooltip, Dropdown, Select } from 'antd';
 import { 
   HomeOutlined, 
   FileTextOutlined, 
@@ -17,15 +17,12 @@ import {
   KeyOutlined,
   PartitionOutlined,
   SplitCellsOutlined,
-  ScheduleOutlined,
   FileProtectOutlined,
   MenuOutlined,
   DatabaseOutlined,
   AuditOutlined,
   ClockCircleOutlined,
   MessageOutlined,
-  TagOutlined,
-  SendOutlined,
   GlobalOutlined,
   ShareAltOutlined
 } from '@ant-design/icons';
@@ -39,7 +36,7 @@ import NotificationCenter from './components/NotificationCenter';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import { Language } from './types';
 
-const { Header, Content, Sider, Footer } = Layout;
+const { Content, Sider, Footer } = Layout;
 
 type MenuItem = 'dashboard' | 'customers' | 'callCenter' | 'payments' | 'documents' | 'reports' | 'system' | 'marketing' | 
                 'marketingTemplate' | 'marketingCustomer' |

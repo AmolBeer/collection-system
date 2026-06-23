@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Table, Button, Upload, message, Space, Card, Modal, Tag, Popconfirm, Select, Row, Col, Input } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile, UploadProps } from 'antd';
-import { DownloadOutlined, UploadOutlined, DeleteOutlined, EyeOutlined, FilterOutlined, TagOutlined } from '@ant-design/icons';
+import { DownloadOutlined, UploadOutlined, DeleteOutlined, EyeOutlined, FilterOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../../i18n/LanguageContext';
 import * as XLSX from 'xlsx';
 
@@ -70,7 +70,6 @@ const CustomerGroupManagement: React.FC = () => {
   const [totalFilteredCount, setTotalFilteredCount] = useState(0);
   const [fullFilteredCustomers, setFullFilteredCustomers] = useState<Customer[]>([]);
   const [newGroupName, setNewGroupName] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const enabledTags = defaultTags.filter(tag => tag.enabled);
 
@@ -118,7 +117,7 @@ const CustomerGroupManagement: React.FC = () => {
         };
         
         setGroups([...groups, newGroup]);
-        onSuccess?.(response);
+        onSuccess?.({});
         message.success(`成功导入 ${customers.length} 条客户数据`);
       } catch (error) {
         onError?.(error as Error);

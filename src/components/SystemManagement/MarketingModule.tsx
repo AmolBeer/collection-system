@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tabs } from 'antd';
-import { UserOutlined, SendOutlined, FileTextOutlined, TagOutlined, DollarOutlined } from '@ant-design/icons';
+import { UserOutlined, SendOutlined, FileTextOutlined, DollarOutlined } from '@ant-design/icons';
 import TemplateManagement from './marketing/TemplateManagement';
 import CustomerGroupManagement from './marketing/CustomerGroupManagement';
 import SendManagement from './marketing/SendManagement';

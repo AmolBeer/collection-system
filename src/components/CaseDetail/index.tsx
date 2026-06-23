@@ -16,27 +16,19 @@ import {
   Input,
   DatePicker,
   Checkbox,
-  Form,
   InputNumber,
   Radio
 } from 'antd';
 import { 
-  EditOutlined, 
-  MoreOutlined, 
   UserOutlined, 
-  HomeOutlined, 
-  FolderOpenOutlined,
   PhoneOutlined,
   MessageOutlined,
   FileTextOutlined,
   ClockCircleOutlined,
-  CheckCircleOutlined,
   SendOutlined,
   CalendarOutlined,
   RightOutlined,
   PlayCircleOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
   CopyOutlined,
   DownloadOutlined,
   EyeOutlined,
@@ -59,13 +51,6 @@ const bankLogos: Record<string, string> = {
 };
 
 // 渠道商列表
-const channelPartners = [
-  { value: 'InstaMoney', label: 'InstaMoney' },
-  { value: 'DANA', label: 'DANA' },
-  { value: 'GoPay', label: 'GoPay' },
-  { value: 'OVO', label: 'OVO' },
-];
-
 // 银行列表
 const banks = [
   { code: 'BNI', name: 'BNI', logo: bankLogos.BNI },
@@ -84,6 +69,10 @@ interface Bill {
   amount: number;
   paidAmount: number;
   status: 'paid' | 'unpaid' | 'overdue';
+  penalty?: number;
+  serviceFee?: number;
+  interest?: number;
+  principal?: number;
 }
 
 interface VAInfo {
@@ -188,12 +177,9 @@ interface CaseTransferRecord {
   operator?: string;
 }
 
-const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
+const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [detailModalActiveTab, setDetailModalActiveTab] = useState<string>('personal');
-  const [showMorePersonal, setShowMorePersonal] = useState<boolean>(false);
-  const [showMoreResidence, setShowMoreResidence] = useState<boolean>(false);
-  const [showMoreEmployment, setShowMoreEmployment] = useState<boolean>(false);
   const [detailModalVisible, setDetailModalVisible] = useState<boolean>(false);
   const [callModalVisible, setCallModalVisible] = useState<boolean>(false);
   const { t } = useLanguage();
@@ -282,12 +268,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     { key: '2', date: '15 Mar 2024', billNumber: 'INV-2024-0215, INV-2024-0315', installments: 'Month 2-3', amount: 4000000, channel: 'Mandiri Virtual Account', method: 'VA', paymentCode: '0987654321', transactionNo: 'TXN-20240315-0002' },
     { key: '3', date: '15 Feb 2024', billNumber: 'INV-2024-0215', installments: 'Month 2', amount: 2000000, channel: 'Alfamart', method: 'Alfamart', paymentCode: 'AFM-20240215', transactionNo: 'TXN-20240215-0003' },
     { key: '4', date: '15 Jan 2024', billNumber: 'INV-2024-0115', installments: 'Month 1', amount: 2000000, channel: 'BCA Virtual Account', method: 'VA', paymentCode: '1122334455', transactionNo: 'TXN-20240115-0004' },
-  ];
-
-  const collectionRecords = [
-    { date: '10 May 2024', collector: 'Dewi Anggraini', method: 'Call', result: 'Contacted', note: 'Promised to pay next week' },
-    { date: '08 May 2024', collector: 'Dewi Anggraini', method: 'SMS', result: 'Sent', note: 'Payment reminder' },
-    { date: '05 May 2024', collector: 'Dewi Anggraini', method: 'Call', result: 'No Answer', note: 'Called 3 times, no answer' },
   ];
 
   // 案件流转记录数据
@@ -506,7 +486,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
   const [vaModalVisible, setVaModalVisible] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState<'VA' | 'Alfamart'>('VA');
   const [selectedBank, setSelectedBank] = useState<string>('');
-  const [selectedChannelPartner, setSelectedChannelPartner] = useState<string>('InstaMoney');
   const [reductionModalVisible, setReductionModalVisible] = useState(false);
   const [previewLetterUrl, setPreviewLetterUrl] = useState<string | null>(null);
   const [addContactModalVisible, setAddContactModalVisible] = useState(false);
@@ -561,9 +540,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
     const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
     return daysOverdue >= reductionRules.minOverdueDays;
   }, [bills]);
-
-  // 获取未结清账单
-  const unpaidBills = useMemo(() => bills.filter(b => b.status !== 'paid'), [bills]);
 
   // 获取有效VA码
   const activeVA = useMemo(() => vaList.filter(va => va.status === 'active'), [vaList]);
@@ -1433,7 +1409,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
                     onClick={() => setCallModalVisible(true)} 
                     style={{ 
                       padding: '0', 
-                      height: 'auto', 
                       lineHeight: '1.5',
                       backgroundColor: '#25D366',
                       borderRadius: '50%',
@@ -1460,13 +1435,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId, onBack }) => {
             </div>
           </div>
 
-          {/* 右侧操作按钮 */}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Button 
-              icon={<MoreOutlined />}
-              style={{ borderRadius: '8px' }}
-            />
-          </div>
         </div>
 
         {/* 金额统计卡片 */}

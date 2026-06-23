@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tag, Calendar, Badge, Statistic, Row, Col, Tooltip, Popconfirm } from 'antd';
+import { Card, Table, Button, Modal, Form, Select, DatePicker, message, Space, Tag, Calendar, Badge, Statistic, Row, Col, Tooltip, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CalendarOutlined, UserOutlined, TeamOutlined, DownloadOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, FileTextOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CalendarOutlined, UserOutlined, DownloadOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -59,9 +59,6 @@ const generateMockSchedules = (): Schedule[] => {
   const schedules: Schedule[] = [];
   const today = new Date();
   
-  // 定义节假日（示例数据）
-  const holidays: Record<string, boolean> = {};
-  
   // 生成最近14天的排班数据
   for (let i = -7; i <= 7; i++) {
     const date = new Date(today);
@@ -70,7 +67,7 @@ const generateMockSchedules = (): Schedule[] => {
     const dayOfWeek = date.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     
-    collectors.forEach((collector, index) => {
+    collectors.forEach((collector) => {
       let status: Schedule['status'] = isWeekend ? 'holiday' : 'working';
       let leaveReason = undefined;
       
@@ -313,7 +310,7 @@ const ScheduleManagement: React.FC = () => {
       key: 'collectorName',
       width: 120,
       fixed: 'left',
-      render: (name: string, record: Schedule) => (
+      render: (name: string) => (
         <Space align="center">
           <UserOutlined />
           <span>{name}</span>

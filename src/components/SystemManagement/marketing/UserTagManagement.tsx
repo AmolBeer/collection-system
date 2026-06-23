@@ -9,7 +9,7 @@ interface ConditionNode {
   type: 'condition' | 'group';
   field?: string;
   operator?: string;
-  value?: string | number;
+  value?: string | number | boolean;
   description?: string;
   logicOperator: 'and' | 'or';
   children?: ConditionNode[];
@@ -396,7 +396,7 @@ const ConditionItem: React.FC<{
           disabled={!node.field}
         />
         <Input
-          value={node.value}
+          value={node.value !== undefined && node.value !== null ? String(node.value) : ''}
           onChange={(e) => handleValueChange(e.target.value)}
           placeholder="值"
           style={{ width: 100 }}
@@ -442,10 +442,6 @@ const ConditionGroup: React.FC<{
   const indentStyle = {
     paddingLeft: depth * 32,
     position: 'relative',
-  };
-
-  const handleGroupLogicChange = (value: 'and' | 'or') => {
-    onUpdate(node.id, { logicOperator: value });
   };
 
   const addMenu = (
@@ -598,7 +594,7 @@ const ConditionGroup: React.FC<{
           backgroundColor: '#fff' 
         }}>
           <p style={{ color: '#999', fontSize: 12 }}>暂无条件</p>
-          <Dropdown overlay={addMenu} trigger={['click']} style={{ marginTop: 8 }}>
+          <Dropdown overlay={addMenu} trigger={['click']}>
             <Button type="dashed" size="small" icon={<PlusOutlined />}>
               {t.addCondition} {t.or} {t.addConditionGroup}
             </Button>
@@ -673,9 +669,9 @@ const UserTagManagement: React.FC = () => {
     setConditionRoot(updateRecursively(conditionRoot));
   };
 
-  const deleteNode = (id: string, parentId: string) => {
+  const deleteNode = (_id: string, _parentId: string) => {
     const deleteRecursively = (n: ConditionNode): ConditionNode | null => {
-      if (n.id === id) {
+      if (n.id === _id) {
         return null;
       }
       if (n.type === 'group' && n.children) {
@@ -688,7 +684,7 @@ const UserTagManagement: React.FC = () => {
     };
     
     const newRoot = deleteRecursively(conditionRoot);
-    if (newRoot === null || (newRoot.type === 'group' && newRoot.children.length === 0)) {
+    if (newRoot === null || (newRoot.type === 'group' && (!newRoot.children || newRoot.children.length === 0))) {
       setConditionRoot({
         id: 'root',
         type: 'group',
@@ -972,7 +968,7 @@ const UserTagManagement: React.FC = () => {
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          {t.addTag}
+          {t.addCondition}
         </Button>
       </div>
 
@@ -1100,7 +1096,7 @@ const UserTagManagement: React.FC = () => {
       </Card>
 
       <Modal
-        title={editingTag ? t.editTag : t.addTag}
+        title={editingTag ? t.editStage : t.addCondition}
         open={modalVisible}
         onOk={handleSave}
         onCancel={() => setModalVisible(false)}

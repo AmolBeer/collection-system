@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Space, Button } from 'antd';
+import { Space, Button } from 'antd';
 import { TeamOutlined, UserOutlined } from '@ant-design/icons';
 import AdminDashboard from './AdminDashboard';
 import CollectorDashboard from './CollectorDashboard';

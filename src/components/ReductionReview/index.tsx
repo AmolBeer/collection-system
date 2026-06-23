@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Table, Button, Tag, Space, Modal, message, Select, Input, Form, Descriptions, Statistic, Row, Col, Divider, Timeline, Avatar, Badge } from 'antd';
+import { Card, Table, Button, Tag, Space, Modal, message, Select, Input, Form, Descriptions, Statistic, Row, Col, Divider, Timeline, Avatar, InputNumber } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { 
   CheckCircleOutlined, 
@@ -7,7 +7,6 @@ import {
   ClockCircleOutlined,
   UserOutlined,
   DollarOutlined,
-  FileTextOutlined,
   EyeOutlined,
   ExclamationCircleOutlined
 } from '@ant-design/icons';
@@ -301,7 +300,7 @@ const ReductionReview: React.FC = () => {
       ),
     },
     {
-      title: t.billCount,
+      title: t.billAmount,
       dataIndex: 'billCount',
       key: 'billCount',
       width: 80,
@@ -333,7 +332,7 @@ const ReductionReview: React.FC = () => {
       key: 'approvedReduction',
       width: 130,
       align: 'right',
-      render: (amount: number, record: ReductionApplication) => (
+      render: (amount: number) => (
         <span style={{ color: amount > 0 ? '#22c55e' : '#9ca3af', fontWeight: '500' }}>
           {amount > 0 ? `-${amount.toLocaleString('id-ID')} IDR` : '-'}
         </span>
@@ -347,8 +346,8 @@ const ReductionReview: React.FC = () => {
       render: (status: ReductionStatus) => {
         const statusConfig: Record<ReductionStatus, { color: string; label: string }> = {
           pending: { color: 'orange', label: t.pendingReview },
-          approved: { color: 'blue', label: t.approved },
-          rejected: { color: 'red', label: t.rejected },
+          approved: { color: 'blue', label: t.approve },
+          rejected: { color: 'red', label: t.reject },
           completed: { color: 'green', label: t.statusCompleted },
         };
         const config = statusConfig[status];
@@ -442,7 +441,7 @@ const ReductionReview: React.FC = () => {
         <Col span={6}>
           <Card variant="borderless" style={{ borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
-              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>{t.approved}</span>}
+              title={<span style={{ fontSize: '13px', color: '#6b7280' }}>{t.approve}</span>}
               value={statistics.approved}
               prefix={<CheckCircleOutlined style={{ color: '#3b82f6' }} />}
               valueStyle={{ color: '#3b82f6', fontSize: '28px', fontWeight: '600' }}
@@ -486,8 +485,8 @@ const ReductionReview: React.FC = () => {
               options={[
                 { value: 'all', label: t.all },
                 { value: 'pending', label: t.pendingReview },
-                { value: 'approved', label: t.approved },
-                { value: 'rejected', label: t.rejected },
+                { value: 'approved', label: t.approve },
+                { value: 'rejected', label: t.reject },
                 { value: 'completed', label: t.statusCompleted },
               ]}
             />
@@ -544,8 +543,8 @@ const ReductionReview: React.FC = () => {
                   selectedApplication.status === 'rejected' ? 'red' : 'green'
                 }>
                   {selectedApplication.status === 'pending' ? t.pendingReview :
-                   selectedApplication.status === 'approved' ? t.approved :
-                   selectedApplication.status === 'rejected' ? t.rejected : t.statusCompleted}
+                   selectedApplication.status === 'approved' ? t.approve :
+                   selectedApplication.status === 'rejected' ? t.reject : t.statusCompleted}
                 </Tag>
               </Descriptions.Item>
             </Descriptions>
@@ -646,7 +645,7 @@ const ReductionReview: React.FC = () => {
                   <Descriptions.Item label={t.paymentCode}>
                     <span style={{ fontFamily: 'monospace', fontWeight: '500' }}>{selectedApplication.paymentCode}</span>
                   </Descriptions.Item>
-                  <Descriptions.Item label={t.paymentTime}>
+                  <Descriptions.Item label={t.paymentDate}>
                     {selectedApplication.paymentTime || t.waitingForPayment}
                   </Descriptions.Item>
                   {selectedApplication.completedTime && (
@@ -677,7 +676,7 @@ const ReductionReview: React.FC = () => {
                   children: selectedApplication.reviewTime ? (
                     <div>
                       <div style={{ fontWeight: '500' }}>
-                        {selectedApplication.status === 'approved' ? t.approved : t.rejected}
+                        {selectedApplication.status === 'approved' ? t.approve : t.reject}
                       </div>
                       <div style={{ fontSize: '12px', color: '#6b7280' }}>{selectedApplication.reviewTime}</div>
                       <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.by}: {selectedApplication.reviewer}</div>
@@ -728,7 +727,7 @@ const ReductionReview: React.FC = () => {
 
       {/* 审核弹窗 */}
       <Modal
-        title={reviewAction === 'approve' ? t.approveReductionApplication : t.rejectReductionApplication}
+        title={reviewAction === 'approve' ? t.reductionApplication : t.reductionApplication}
         open={reviewModalVisible}
         onCancel={() => setReviewModalVisible(false)}
         onOk={handleSubmitReview}
@@ -761,18 +760,18 @@ const ReductionReview: React.FC = () => {
             {reviewAction === 'approve' ? (
               <Form form={form} layout="vertical">
                 <Form.Item 
-                  label={t.approvedReductionAmount}
+                  label={t.approvedReduction}
                   required
-                  help={t.enterApprovedAmount}
+                  help={t.approvedAmount}
                 >
                   <InputNumber
                     value={approvedAmount}
-                    onChange={(value) => setApprovedAmount(value || 0)}
+                    onChange={(value: string | number | null) => setApprovedAmount(value ? Number(value) : 0)}
                     min={0}
                     max={selectedApplication.requestedReduction}
                     style={{ width: '100%' }}
-                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={value => value!.replace(/,/g, '') as unknown as number}
+                    formatter={(value: string | number | undefined) => value !== undefined ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                    parser={(value: string | undefined) => value ? parseInt(value.replace(/,/g, ''), 10) : 0}
                   />
                   <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
                     {t.max}: {selectedApplication.requestedReduction.toLocaleString('id-ID')} IDR

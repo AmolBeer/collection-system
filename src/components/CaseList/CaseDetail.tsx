@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Tabs, Card, Descriptions, Table, Button, Form, Input, InputNumber, Select, DatePicker, Tag, Space, message, List, Avatar, Badge } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, PhoneOutlined, UserOutlined, HomeOutlined, CreditCardOutlined, FileTextOutlined, HistoryOutlined } from '@ant-design/icons';
+import { Modal, Tabs, Card, Descriptions, Table, Button, Form, Input, InputNumber, Select, Tag, Space, message, List, Avatar, Badge } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface Case {
@@ -307,7 +306,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ visible, caseData, onClose }) =
                               min={0}
                               max={caseData.amount}
                               value={vaAmount}
-                              onChange={setVaAmount}
+                              onChange={(value: number | null) => setVaAmount(value ?? 0)}
                               style={{ width: '100%' }}
                             />
                           </Form.Item>
@@ -357,7 +356,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ visible, caseData, onClose }) =
                               min={0}
                               max={caseData.amount}
                               value={reductionAmount}
-                              onChange={setReductionAmount}
+                              onChange={(value: number | null) => setReductionAmount(value ?? 0)}
                               style={{ width: '100%' }}
                             />
                           </Form.Item>

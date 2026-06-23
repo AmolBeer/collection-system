@@ -233,7 +233,7 @@ const AutoAllocationManagement: React.FC = () => {
       width: 100,
     },
     {
-      title: t.allocationType,
+      title: t.allocationTeam,
       dataIndex: 'allocationType',
       key: 'allocationType',
       width: 100,
@@ -258,7 +258,7 @@ const AutoAllocationManagement: React.FC = () => {
       ),
     },
     {
-      title: t.maxCasesPerCollector,
+      title: t.maxPerCollector,
       dataIndex: 'maxCasesPerCollector',
       key: 'maxCasesPerCollector',
       width: 120,
@@ -277,7 +277,7 @@ const AutoAllocationManagement: React.FC = () => {
       width: 80,
       render: (status: string) => (
         <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status === 'active' ? t.enable : t.disable}
+          {status === 'active' ? t.enabled : t.disabled}
         </Tag>
       ),
     },

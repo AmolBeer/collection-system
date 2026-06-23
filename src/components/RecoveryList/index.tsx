@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Table, Input, Select, Space, Tag, DatePicker, Button } from 'antd';
+import { Card, Table, Input, Select, Space, Tag, DatePicker } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { SearchOutlined, FilterOutlined, EyeOutlined, DollarOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface Recovery {
@@ -144,7 +144,7 @@ const RecoveryList: React.FC = () => {
 
   const columns: ColumnsType<Recovery> = [
     {
-      title: t.recoveryId,
+      title: t.caseId,
       dataIndex: 'id',
       key: 'id',
       width: 100,
@@ -192,7 +192,7 @@ const RecoveryList: React.FC = () => {
       },
     },
     {
-      title: t.recoveryDate,
+      title: t.date,
       dataIndex: 'recoveryDate',
       key: 'recoveryDate',
       width: 120,
@@ -299,7 +299,7 @@ const RecoveryList: React.FC = () => {
                 : '0.00'
               }%
             </div>
-            <div style={{ color: '#666', marginTop: 4 }}>{t.totalRecoveryRate}</div>
+            <div style={{ color: '#666', marginTop: 4 }}>{t.recoveryRate}</div>
           </div>
         </Card>
       </div>

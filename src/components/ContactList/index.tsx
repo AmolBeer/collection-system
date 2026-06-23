@@ -48,7 +48,7 @@ const ContactList: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       width: 200,
-      render: (name, record) => (
+      render: (name) => (
         <Space>
           <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#0d4f3c' }} />
           <span>{name}</span>

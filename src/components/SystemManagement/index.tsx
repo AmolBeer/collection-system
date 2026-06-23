@@ -4,7 +4,6 @@ import OrganizationStructure from './OrganizationStructure';
 import StageConfig from '../StageConfig';
 import Dashboard from '../Dashboard';
 import CaseList from '../CaseList';
-import CaseDetail from '../CaseDetail';
 import RoleManagement from './RoleManagement';
 import RecoveryList from '../RecoveryList';
 import ReductionRuleConfig from './ReductionRuleConfig';

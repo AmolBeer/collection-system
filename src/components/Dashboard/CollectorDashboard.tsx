@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Row, Col, Statistic, Progress, Table, List, Avatar, Tag, Badge } from 'antd';
+import { Card, Row, Col, Statistic, Table, List, Tag, Badge } from 'antd';
 import { BarChartOutlined, CheckCircleOutlined, ClockCircleOutlined, DollarOutlined, ArrowUpOutlined, PhoneOutlined, SendOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -146,7 +146,6 @@ const CollectorDashboard: React.FC = () => {
               value={summaryData.currentTasks}
               prefix={<ClockCircleOutlined style={{ color: '#3b82f6' }} />}
               valueStyle={{ color: '#3b82f6', fontWeight: '700', fontSize: '28px' }}
-              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
@@ -157,7 +156,6 @@ const CollectorDashboard: React.FC = () => {
               value={summaryData.completedTasks}
               prefix={<CheckCircleOutlined style={{ color: '#22c55e' }} />}
               valueStyle={{ color: '#22c55e', fontWeight: '700', fontSize: '28px' }}
-              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
@@ -169,7 +167,6 @@ const CollectorDashboard: React.FC = () => {
               suffix="%"
               prefix={<ArrowUpOutlined style={{ color: '#0d4f3c' }} />}
               valueStyle={{ color: '#0d4f3c', fontWeight: '700', fontSize: '28px' }}
-              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
             />
           </Card>
         </Col>
@@ -180,7 +177,6 @@ const CollectorDashboard: React.FC = () => {
               value={summaryData.recoveredAmount}
               prefix={<DollarOutlined style={{ color: '#f97316' }} />}
               valueStyle={{ color: '#f97316', fontWeight: '700', fontSize: '28px' }}
-              titleStyle={{ color: '#6b7280', fontSize: '13px' }}
               formatter={(value) => `${value.toLocaleString()} IDR`}
             />
           </Card>

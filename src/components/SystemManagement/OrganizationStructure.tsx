@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Tree, Button, Modal, Form, Input, Select, message, Space, Card, Table, Tag, Avatar, Badge, Divider } from 'antd';
+import { Tree, Button, Modal, Form, Input, Select, message, Space, Card, Table, Tag, Avatar, Badge } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined } from '@ant-design/icons';
 import type { DataNode } from 'rc-tree/lib/interface';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -78,10 +79,6 @@ const OrganizationStructure: React.FC = () => {
     } else {
       setSelectedDepartment(null);
     }
-  };
-
-  const findDepartmentById = (id: string): Department | undefined => {
-    return departments.find(dept => dept.id === id);
   };
 
   const handleDelete = (node: DataNode) => {
@@ -184,7 +181,7 @@ const OrganizationStructure: React.FC = () => {
     {
       title: t.action,
       key: 'action',
-      render: (_, record) => (
+      render: (_: any, record: any) => (
         <Space size="small">
           <Button 
             type="link" 
@@ -281,7 +278,7 @@ const OrganizationStructure: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>
               <Space direction="vertical" align="center">
                 <TeamOutlined style={{ fontSize: 48, color: '#ddd' }} />
-                <span>{t.pleaseSelectDepartment}</span>
+                <span>{t.selectDepartment}</span>
               </Space>
             </div>
           )}
@@ -300,9 +297,9 @@ const OrganizationStructure: React.FC = () => {
           <Form.Item
             name="name"
             label={t.departmentName}
-            rules={[{ required: true, message: t.pleaseInputDepartmentName }]}
+            rules={[{ required: true, message: t.pleaseInput }]}
           >
-            <Input placeholder={t.pleaseInputDepartmentName} />
+            <Input placeholder={t.pleaseInput} />
           </Form.Item>
           <Form.Item
             name="parentId"

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Space, Popconfirm, Switch, InputNumber } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined, PlayCircleOutlined, PauseCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface AssignmentRule {
@@ -146,7 +146,7 @@ const AutoAssignmentConfig: React.FC = () => {
     });
   };
 
-  const handleRunNow = (ruleId: string) => {
+  const handleRunNow = (_ruleId: string) => {
     message.success('自动分案任务已启动');
     // 实际项目中这里会调用API启动分案任务
   };
@@ -197,13 +197,13 @@ const AutoAssignmentConfig: React.FC = () => {
       render: (collectors: string[]) => (
         <Space size="small" wrap>
           {collectors.map((collector, index) => (
-            <Tag key={index} size="small">{collector}</Tag>
+            <Tag key={index}>{collector}</Tag>
           ))}
         </Space>
       ),
     },
     {
-      title: t.distributionMode,
+      title: t.distributionMethod,
       dataIndex: 'distributionMode',
       key: 'distributionMode',
       width: 100,
@@ -227,7 +227,7 @@ const AutoAssignmentConfig: React.FC = () => {
       dataIndex: 'maxCasesPerCollector',
       key: 'maxCasesPerCollector',
       width: 100,
-      render: (max: number) => `${max}${t.case}`,
+      render: (max: number) => `${max}${t.cases}`,
     },
     {
       title: t.status,
