@@ -10,6 +10,8 @@ interface Organization {
   name: string;
   type: 'internal' | 'external'; // 内催机构/外催机构
   description?: string;
+  leaderId?: string; // 机构负责人
+  leaderName?: string;
 }
 
 // 部门
@@ -43,9 +45,9 @@ interface Collector {
 
 // 默认数据
 const defaultOrganizations: Organization[] = [
-  { id: 'org1', name: '内催机构', type: 'internal', description: '公司内部催收团队' },
-  { id: 'org2', name: '外催机构A', type: 'external', description: '外部催收合作伙伴' },
-  { id: 'org3', name: '外催机构B', type: 'external', description: '外部催收合作伙伴' },
+  { id: 'org1', name: '内催机构', type: 'internal', description: '公司内部催收团队', leaderName: '王总' },
+  { id: 'org2', name: '外催机构A', type: 'external', description: '外部催收合作伙伴', leaderName: '李总' },
+  { id: 'org3', name: '外催机构B', type: 'external', description: '外部催收合作伙伴', leaderName: '张总' },
 ];
 
 const defaultDepartments: Department[] = [
@@ -126,6 +128,11 @@ const OrganizationStructure: React.FC = () => {
             <Tag color={org.type === 'internal' ? 'blue' : 'green'}>
               {org.type === 'internal' ? '内催' : '外催'}
             </Tag>
+            {org.leaderName && (
+              <Tag color="red" style={{ fontSize: 11 }}>
+                {org.leaderName}
+              </Tag>
+            )}
           </div>
         ),
         type: 'organization',
@@ -516,7 +523,13 @@ const OrganizationStructure: React.FC = () => {
                     <div>
                       <h3 style={{ margin: 0 }}>{getNodeTypeName(selectedNode.type)}详情</h3>
                       <span style={{ color: '#666', fontSize: 13 }}>
-                        {selectedNode.type === 'organization' && `类型: ${(selectedNode.data as Organization).type === 'internal' ? '内催机构' : '外催机构'}`}
+                        {selectedNode.type === 'organization' && (
+                          <>
+                            类型: {(selectedNode.data as Organization).type === 'internal' ? '内催机构' : '外催机构'}
+                            {' | '}
+                            机构负责人: {(selectedNode.data as Organization).leaderName || '未设置'}
+                          </>
+                        )}
                         {selectedNode.type === 'department' && `部门负责人: ${(selectedNode.data as Department).leaderName || '未设置'}`}
                         {selectedNode.type === 'group' && `小组负责人: ${(selectedNode.data as Group).leaderName || '未设置'}`}
                       </span>
@@ -623,6 +636,12 @@ const OrganizationStructure: React.FC = () => {
                   <Select.Option value="internal">内催机构</Select.Option>
                   <Select.Option value="external">外催机构</Select.Option>
                 </Select>
+              </Form.Item>
+              <Form.Item
+                name="leaderName"
+                label="机构负责人"
+              >
+                <Input placeholder="请输入机构负责人姓名" />
               </Form.Item>
               <Form.Item
                 name="description"
