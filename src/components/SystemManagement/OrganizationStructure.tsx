@@ -230,6 +230,24 @@ const OrganizationStructure: React.FC = () => {
     setModalType(type);
     setEditingData(null);
     form.resetFields();
+    
+    if (type === 'department' && selectedNode) {
+      if (selectedNode.type === 'organization') {
+        form.setFieldsValue({ organizationId: (selectedNode.data as Organization).id });
+      } else if (selectedNode.type === 'department') {
+        const dept = selectedNode.data as Department;
+        form.setFieldsValue({ 
+          organizationId: dept.organizationId,
+          parentId: dept.id 
+        });
+      }
+    }
+    
+    if (type === 'group' && selectedNode && selectedNode.type === 'department') {
+      const dept = selectedNode.data as Department;
+      form.setFieldsValue({ departmentId: dept.id });
+    }
+    
     setModalVisible(true);
   };
 
@@ -504,10 +522,20 @@ const OrganizationStructure: React.FC = () => {
                       </span>
                     </div>
                     <Space>
-                      {selectedNode.type !== 'organization' && (
-                        <Button icon={<PlusOutlined />} onClick={() => handleAdd(selectedNode.type === 'department' ? 'group' : 'department')}>
-                          添加{selectedNode.type === 'department' ? '小组' : '子部门'}
+                      {selectedNode.type === 'organization' && (
+                        <Button icon={<PlusOutlined />} onClick={() => handleAdd('department')}>
+                          添加部门
                         </Button>
+                      )}
+                      {selectedNode.type === 'department' && (
+                        <>
+                          <Button icon={<PlusOutlined />} onClick={() => handleAdd('department')}>
+                            添加子部门
+                          </Button>
+                          <Button icon={<PlusOutlined />} onClick={() => handleAdd('group')}>
+                            添加小组
+                          </Button>
+                        </>
                       )}
                       <Button icon={<EditOutlined />} onClick={() => handleEdit(selectedNode)}>
                         {t.edit}
