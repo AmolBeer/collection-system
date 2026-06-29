@@ -17,7 +17,35 @@ const { TextArea } = Input;
 // 减免申请状态
 type ReductionStatus = 'pending' | 'approved' | 'rejected' | 'completed';
 
-// 减免申请记录
+interface BillSubjectDetail {
+  principal: number;
+  interest: number;
+  penalty: number;
+}
+
+interface BillDetail {
+  billNumber: string;
+  installments: string;
+  originalAmount: number;
+  originalSubjects: BillSubjectDetail;
+  reductionAmount: number;
+  reductionSubjects: BillSubjectDetail;
+  finalAmount: number;
+  finalSubjects: BillSubjectDetail;
+}
+
+interface SettlementRecord {
+  billNumber: string;
+  installments: string;
+  paidPrincipal: number;
+  paidInterest: number;
+  paidPenalty: number;
+  remainingPrincipal: number;
+  remainingInterest: number;
+  remainingPenalty: number;
+  status: 'paid' | 'partial' | 'unpaid';
+}
+
 interface ReductionApplication {
   id: string;
   applicationId: string;
@@ -25,12 +53,17 @@ interface ReductionApplication {
   customerName: string;
   phone: string;
   orderId: string;
+  productName: string;
+  reductionType: 'normal' | 'special';
+  settlementType: 'settle' | 'nonSettle';
   applyTime: string;
   applicant: string;
   billCount: number;
   totalAmount: number;
   requestedReduction: number;
   approvedReduction: number;
+  maxReduction: number;
+  finalPaymentAmount: number;
   status: ReductionStatus;
   reviewTime?: string;
   reviewer?: string;
@@ -38,15 +71,10 @@ interface ReductionApplication {
   paymentCode?: string;
   paymentTime?: string;
   completedTime?: string;
-  billDetails: {
-    billNumber: string;
-    originalAmount: number;
-    reductionAmount: number;
-    finalAmount: number;
-  }[];
+  billDetails: BillDetail[];
+  settlementRecords?: SettlementRecord[];
 }
 
-// 模拟减免申请数据
 const mockApplications: ReductionApplication[] = [
   {
     id: 'RA001',
@@ -55,16 +83,39 @@ const mockApplications: ReductionApplication[] = [
     customerName: 'EZI SADRAKH SAPUTRA',
     phone: '0821 6273 6949',
     orderId: 'ORD001',
+    productName: 'Product A',
+    reductionType: 'normal',
+    settlementType: 'settle',
     applyTime: '10 May 2024, 09:30',
     applicant: 'Dewi Anggraini',
     billCount: 2,
-    totalAmount: 4400000,
-    requestedReduction: 660000,
+    totalAmount: 6900000,
+    requestedReduction: 500000,
     approvedReduction: 0,
+    maxReduction: 900000,
+    finalPaymentAmount: 6400000,
     status: 'pending',
     billDetails: [
-      { billNumber: 'INV-2024-0515', originalAmount: 2200000, reductionAmount: 330000, finalAmount: 1870000 },
-      { billNumber: 'INV-2024-0615', originalAmount: 2200000, reductionAmount: 330000, finalAmount: 1870000 },
+      { 
+        billNumber: 'INV-2024-0515',
+        installments: '第3期',
+        originalAmount: 3600000,
+        originalSubjects: { principal: 3000000, interest: 300000, penalty: 300000 },
+        reductionAmount: 300000,
+        reductionSubjects: { principal: 0, interest: 0, penalty: 300000 },
+        finalAmount: 3300000,
+        finalSubjects: { principal: 3000000, interest: 300000, penalty: 0 }
+      },
+      { 
+        billNumber: 'INV-2024-0615',
+        installments: '第4期',
+        originalAmount: 3300000,
+        originalSubjects: { principal: 3000000, interest: 300000, penalty: 0 },
+        reductionAmount: 200000,
+        reductionSubjects: { principal: 0, interest: 200000, penalty: 0 },
+        finalAmount: 3100000,
+        finalSubjects: { principal: 3000000, interest: 100000, penalty: 0 }
+      },
     ],
   },
   {
@@ -74,19 +125,33 @@ const mockApplications: ReductionApplication[] = [
     customerName: 'JOHN DOE',
     phone: '0812 3456 7890',
     orderId: 'ORD002',
+    productName: 'Product B',
+    reductionType: 'normal',
+    settlementType: 'nonSettle',
     applyTime: '08 May 2024, 14:20',
     applicant: 'Budi Santoso',
     billCount: 1,
     totalAmount: 1800000,
     requestedReduction: 270000,
     approvedReduction: 200000,
+    maxReduction: 360000,
+    finalPaymentAmount: 1600000,
     status: 'approved',
     reviewTime: '08 May 2024, 16:45',
     reviewer: 'Ahmad Rizal (Supervisor)',
     reviewComment: '客户承诺周末还款，批准减免20万',
     paymentCode: 'VA-20240512-001',
     billDetails: [
-      { billNumber: 'INV-2024-0701', originalAmount: 1800000, reductionAmount: 200000, finalAmount: 1600000 },
+      { 
+        billNumber: 'INV-2024-0701',
+        installments: '第2期',
+        originalAmount: 1800000,
+        originalSubjects: { principal: 1500000, interest: 200000, penalty: 100000 },
+        reductionAmount: 200000,
+        reductionSubjects: { principal: 0, interest: 100000, penalty: 100000 },
+        finalAmount: 1600000,
+        finalSubjects: { principal: 1500000, interest: 100000, penalty: 0 }
+      },
     ],
   },
   {
@@ -96,23 +161,60 @@ const mockApplications: ReductionApplication[] = [
     customerName: 'JANE SMITH',
     phone: '0856 7890 1234',
     orderId: 'ORD003',
+    productName: 'Product A',
+    reductionType: 'special',
+    settlementType: 'settle',
     applyTime: '05 May 2024, 11:00',
     applicant: 'Siti Aminah',
     billCount: 3,
     totalAmount: 6000000,
     requestedReduction: 1200000,
     approvedReduction: 1200000,
+    maxReduction: 1500000,
+    finalPaymentAmount: 4800000,
     status: 'completed',
     reviewTime: '05 May 2024, 15:30',
     reviewer: 'Ahmad Rizal (Supervisor)',
-    reviewComment: '逾期超过60天，符合M3减免规则',
+    reviewComment: '重大客户投诉，批准特殊减免',
     paymentCode: 'VA-20240506-001',
     paymentTime: '06 May 2024, 10:30',
     completedTime: '06 May 2024, 10:35',
     billDetails: [
-      { billNumber: 'INV-2024-0301', originalAmount: 2000000, reductionAmount: 400000, finalAmount: 1600000 },
-      { billNumber: 'INV-2024-0401', originalAmount: 2000000, reductionAmount: 400000, finalAmount: 1600000 },
-      { billNumber: 'INV-2024-0501', originalAmount: 2000000, reductionAmount: 400000, finalAmount: 1600000 },
+      { 
+        billNumber: 'INV-2024-0301',
+        installments: '第3期',
+        originalAmount: 2000000,
+        originalSubjects: { principal: 1800000, interest: 150000, penalty: 50000 },
+        reductionAmount: 400000,
+        reductionSubjects: { principal: 200000, interest: 150000, penalty: 50000 },
+        finalAmount: 1600000,
+        finalSubjects: { principal: 1600000, interest: 0, penalty: 0 }
+      },
+      { 
+        billNumber: 'INV-2024-0401',
+        installments: '第4期',
+        originalAmount: 2000000,
+        originalSubjects: { principal: 1800000, interest: 150000, penalty: 50000 },
+        reductionAmount: 400000,
+        reductionSubjects: { principal: 200000, interest: 150000, penalty: 50000 },
+        finalAmount: 1600000,
+        finalSubjects: { principal: 1600000, interest: 0, penalty: 0 }
+      },
+      { 
+        billNumber: 'INV-2024-0501',
+        installments: '第5期',
+        originalAmount: 2000000,
+        originalSubjects: { principal: 1800000, interest: 150000, penalty: 50000 },
+        reductionAmount: 400000,
+        reductionSubjects: { principal: 200000, interest: 150000, penalty: 50000 },
+        finalAmount: 1600000,
+        finalSubjects: { principal: 1600000, interest: 0, penalty: 0 }
+      },
+    ],
+    settlementRecords: [
+      { billNumber: 'INV-2024-0301', installments: '第3期', paidPrincipal: 1600000, paidInterest: 0, paidPenalty: 0, remainingPrincipal: 0, remainingInterest: 0, remainingPenalty: 0, status: 'paid' },
+      { billNumber: 'INV-2024-0401', installments: '第4期', paidPrincipal: 1600000, paidInterest: 0, paidPenalty: 0, remainingPrincipal: 0, remainingInterest: 0, remainingPenalty: 0, status: 'paid' },
+      { billNumber: 'INV-2024-0501', installments: '第5期', paidPrincipal: 1600000, paidInterest: 0, paidPenalty: 0, remainingPrincipal: 0, remainingInterest: 0, remainingPenalty: 0, status: 'paid' },
     ],
   },
   {
@@ -122,19 +224,42 @@ const mockApplications: ReductionApplication[] = [
     customerName: 'ROBERT BROWN',
     phone: '0899 8765 4321',
     orderId: 'ORD004',
+    productName: 'Product C',
+    reductionType: 'normal',
+    settlementType: 'nonSettle',
     applyTime: '03 May 2024, 09:15',
     applicant: 'Dewi Anggraini',
     billCount: 2,
     totalAmount: 4000000,
     requestedReduction: 800000,
     approvedReduction: 0,
+    maxReduction: 400000,
+    finalPaymentAmount: 4000000,
     status: 'rejected',
     reviewTime: '03 May 2024, 14:00',
     reviewer: 'Ahmad Rizal (Supervisor)',
     reviewComment: '逾期天数不足30天，不符合减免条件',
     billDetails: [
-      { billNumber: 'INV-2024-0601', originalAmount: 2000000, reductionAmount: 0, finalAmount: 2000000 },
-      { billNumber: 'INV-2024-0701', originalAmount: 2000000, reductionAmount: 0, finalAmount: 2000000 },
+      { 
+        billNumber: 'INV-2024-0601',
+        installments: '第2期',
+        originalAmount: 2000000,
+        originalSubjects: { principal: 1800000, interest: 150000, penalty: 50000 },
+        reductionAmount: 0,
+        reductionSubjects: { principal: 0, interest: 0, penalty: 0 },
+        finalAmount: 2000000,
+        finalSubjects: { principal: 1800000, interest: 150000, penalty: 50000 }
+      },
+      { 
+        billNumber: 'INV-2024-0701',
+        installments: '第3期',
+        originalAmount: 2000000,
+        originalSubjects: { principal: 1800000, interest: 150000, penalty: 50000 },
+        reductionAmount: 0,
+        reductionSubjects: { principal: 0, interest: 0, penalty: 0 },
+        finalAmount: 2000000,
+        finalSubjects: { principal: 1800000, interest: 150000, penalty: 50000 }
+      },
     ],
   },
 ];
@@ -551,19 +676,29 @@ const ReductionReview: React.FC = () => {
 
             <Divider>{t.billDetails}</Divider>
 
-            {/* 账单明细 */}
+            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Tag color={selectedApplication.reductionType === 'special' ? 'purple' : 'blue'}>
+                {selectedApplication.reductionType === 'special' ? t.specialReduction : t.normalReduction}
+              </Tag>
+              <Tag color={selectedApplication.settlementType === 'settle' ? 'green' : 'orange'}>
+                {selectedApplication.settlementType === 'settle' ? t.settle : t.nonSettle}
+              </Tag>
+            </div>
+
             <Table
               dataSource={selectedApplication.billDetails}
               rowKey="billNumber"
               pagination={false}
               size="small"
               columns={[
-                { title: t.billNumber, dataIndex: 'billNumber', key: 'billNumber' },
+                { title: t.installments, dataIndex: 'installments', key: 'installments', width: 80 },
+                { title: t.billNumber, dataIndex: 'billNumber', key: 'billNumber', width: 150 },
                 { 
                   title: t.originalAmount, 
                   dataIndex: 'originalAmount', 
                   key: 'originalAmount',
                   align: 'right',
+                  width: 140,
                   render: (val: number) => `${val.toLocaleString('id-ID')} IDR`
                 },
                 { 
@@ -571,6 +706,7 @@ const ReductionReview: React.FC = () => {
                   dataIndex: 'reductionAmount', 
                   key: 'reductionAmount',
                   align: 'right',
+                  width: 140,
                   render: (val: number) => (
                     <span style={{ color: val > 0 ? '#22c55e' : '#9ca3af' }}>
                       {val > 0 ? `-${val.toLocaleString('id-ID')}` : '-'} IDR
@@ -582,7 +718,44 @@ const ReductionReview: React.FC = () => {
                   dataIndex: 'finalAmount', 
                   key: 'finalAmount',
                   align: 'right',
+                  width: 140,
                   render: (val: number) => <strong>{val.toLocaleString('id-ID')} IDR</strong>
+                },
+                { 
+                  title: t.subjectDetail, 
+                  key: 'subjectDetail',
+                  width: 300,
+                  render: (_, record: BillDetail) => (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                        <span style={{ color: '#6b7280' }}>{t.principal}:</span>
+                        <span>{record.originalSubjects.principal.toLocaleString('id-ID')}</span>
+                        {record.reductionSubjects.principal > 0 && (
+                          <span style={{ color: '#22c55e', marginLeft: '8px' }}>
+                            -{record.reductionSubjects.principal.toLocaleString('id-ID')}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                        <span style={{ color: '#6b7280' }}>{t.interest}:</span>
+                        <span>{record.originalSubjects.interest.toLocaleString('id-ID')}</span>
+                        {record.reductionSubjects.interest > 0 && (
+                          <span style={{ color: '#22c55e', marginLeft: '8px' }}>
+                            -{record.reductionSubjects.interest.toLocaleString('id-ID')}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                        <span style={{ color: '#6b7280' }}>{t.penalty}:</span>
+                        <span>{record.originalSubjects.penalty.toLocaleString('id-ID')}</span>
+                        {record.reductionSubjects.penalty > 0 && (
+                          <span style={{ color: '#22c55e', marginLeft: '8px' }}>
+                            -{record.reductionSubjects.penalty.toLocaleString('id-ID')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
                 },
               ]}
             />
@@ -590,7 +763,7 @@ const ReductionReview: React.FC = () => {
             {/* 汇总 */}
             <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
               <Row gutter={16}>
-                <Col span={8}>
+                <Col span={6}>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.totalAmount}</div>
                     <div style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
@@ -598,7 +771,15 @@ const ReductionReview: React.FC = () => {
                     </div>
                   </div>
                 </Col>
-                <Col span={8}>
+                <Col span={6}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.maxReduction}</div>
+                    <div style={{ fontSize: '18px', fontWeight: '600', color: '#3b82f6' }}>
+                      -{selectedApplication.maxReduction.toLocaleString('id-ID')} IDR
+                    </div>
+                  </div>
+                </Col>
+                <Col span={6}>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.requestedReduction}</div>
                     <div style={{ fontSize: '18px', fontWeight: '600', color: '#f97316' }}>
@@ -606,13 +787,11 @@ const ReductionReview: React.FC = () => {
                     </div>
                   </div>
                 </Col>
-                <Col span={8}>
+                <Col span={6}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.approvedReduction}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>{t.finalPaymentAmount}</div>
                     <div style={{ fontSize: '18px', fontWeight: '600', color: '#22c55e' }}>
-                      {selectedApplication.approvedReduction > 0 
-                        ? `-${selectedApplication.approvedReduction.toLocaleString('id-ID')} IDR`
-                        : '-'}
+                      {selectedApplication.finalPaymentAmount.toLocaleString('id-ID')} IDR
                     </div>
                   </div>
                 </Col>
@@ -654,6 +833,58 @@ const ReductionReview: React.FC = () => {
                     </Descriptions.Item>
                   )}
                 </Descriptions>
+              </>
+            )}
+
+            {/* 平账记录 */}
+            {selectedApplication.settlementRecords && selectedApplication.settlementRecords.length > 0 && (
+              <>
+                <Divider>{t.settlementRecord}</Divider>
+                <Table
+                  dataSource={selectedApplication.settlementRecords}
+                  rowKey="billNumber"
+                  pagination={false}
+                  size="small"
+                  columns={[
+                    { title: t.installments, dataIndex: 'installments', key: 'installments', width: 80 },
+                    { title: t.billNumber, dataIndex: 'billNumber', key: 'billNumber', width: 150 },
+                    { 
+                      title: t.paidPrincipal, 
+                      dataIndex: 'paidPrincipal', 
+                      key: 'paidPrincipal',
+                      align: 'right',
+                      width: 120,
+                      render: (val: number) => val > 0 ? `${val.toLocaleString('id-ID')} IDR` : '-'
+                    },
+                    { 
+                      title: t.paidInterest, 
+                      dataIndex: 'paidInterest', 
+                      key: 'paidInterest',
+                      align: 'right',
+                      width: 120,
+                      render: (val: number) => val > 0 ? `${val.toLocaleString('id-ID')} IDR` : '-'
+                    },
+                    { 
+                      title: t.paidPenalty, 
+                      dataIndex: 'paidPenalty', 
+                      key: 'paidPenalty',
+                      align: 'right',
+                      width: 120,
+                      render: (val: number) => val > 0 ? `${val.toLocaleString('id-ID')} IDR` : '-'
+                    },
+                    { 
+                      title: t.status, 
+                      dataIndex: 'status', 
+                      key: 'status',
+                      width: 100,
+                      render: (status: string) => (
+                        <Tag color={status === 'paid' ? 'green' : status === 'partial' ? 'orange' : 'red'}>
+                          {status === 'paid' ? t.paid : status === 'partial' ? t.partial : t.unpaid}
+                        </Tag>
+                      )
+                    },
+                  ]}
+                />
               </>
             )}
 
@@ -746,8 +977,30 @@ const ReductionReview: React.FC = () => {
                 <span style={{ fontWeight: '500' }}>{selectedApplication.customerName}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#6b7280' }}>{t.product}:</span>
+                <span style={{ fontWeight: '500' }}>{selectedApplication.productName}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#6b7280' }}>{t.reductionType}:</span>
+                <Tag color={selectedApplication.reductionType === 'special' ? 'purple' : 'blue'}>
+                  {selectedApplication.reductionType === 'special' ? t.specialReduction : t.normalReduction}
+                </Tag>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#6b7280' }}>{t.settlementType}:</span>
+                <Tag color={selectedApplication.settlementType === 'settle' ? 'green' : 'orange'}>
+                  {selectedApplication.settlementType === 'settle' ? t.settle : t.nonSettle}
+                </Tag>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ color: '#6b7280' }}>{t.totalAmount}:</span>
                 <span style={{ fontWeight: '500' }}>{selectedApplication.totalAmount.toLocaleString('id-ID')} IDR</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#6b7280' }}>{t.maxReduction}:</span>
+                <span style={{ fontWeight: '500', color: '#3b82f6' }}>
+                  -{selectedApplication.maxReduction.toLocaleString('id-ID')} IDR
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#6b7280' }}>{t.requestedReduction}:</span>

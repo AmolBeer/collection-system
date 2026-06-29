@@ -144,10 +144,8 @@ export interface Translations {
   permissionCount: string;
   // 减免规则
   normalStatus: string;
-  minOverdueDays: string;
-  pleaseInputMinOverdueDays: string;
-  maxOverdueDays: string;
-  pleaseInputMaxOverdueDays: string;
+  overdueDays: string;
+  pleaseInputOverdueDays: string;
   reductionMethod: string;
   pleaseSelectReductionMethod: string;
   fixedAmount: string;
@@ -163,6 +161,12 @@ export interface Translations {
   pleaseInputPenaltyReduction: string;
   unitCurrency: string;
   unitPercent: string;
+  subjectDetail: string;
+  principal: string;
+  interest: string;
+  penalty: string;
+  finalPaymentAmount: string;
+  settlementRecord: string;
   // 通用词汇
   help: string;
   collector: string;
@@ -212,7 +216,6 @@ export interface Translations {
   selectedCount: string;
   casesSuffix: string;
   borrowerName: string;
-  overdueDays: string;
   overdueAmount: string;
   noData: string;
   creator: string;
@@ -384,6 +387,25 @@ export interface Translations {
   reductionApplicationDetail: string;
   billDetails: string;
   reduction: string;
+  reductionType: string;
+  normalReduction: string;
+  specialReduction: string;
+  settlementType: string;
+  settle: string;
+  nonSettle: string;
+  settleRule: string;
+  nonSettleRule: string;
+  pleaseSelectSettlementType: string;
+  normalReductionRule: string;
+  specialReductionRule: string;
+  addSpecialReductionRule: string;
+  editSpecialReductionRule: string;
+  maxReduction: string;
+  paidPrincipal: string;
+  paidInterest: string;
+  paidPenalty: string;
+  paid: string;
+  unpaid: string;
   finalAmount: string;
   requestedReduction: string;
   approvedReduction: string;
@@ -558,10 +580,8 @@ export const translations: Record<Language, Translations> = {
     description: '描述',
     permissionCount: '权限数量',
     normalStatus: '正常状态',
-    minOverdueDays: '最小逾期天数',
-    pleaseInputMinOverdueDays: '请输入最小逾期天数',
-    maxOverdueDays: '最大逾期天数',
-    pleaseInputMaxOverdueDays: '请输入最大逾期天数',
+    overdueDays: '逾期天数',
+    pleaseInputOverdueDays: '请输入逾期天数',
     reductionMethod: '减免方式',
     pleaseSelectReductionMethod: '请选择减免方式',
     fixedAmount: '固定金额',
@@ -672,7 +692,6 @@ export const translations: Record<Language, Translations> = {
     selectedCount: '已选择',
     casesSuffix: '件案件',
     borrowerName: '借款人',
-    overdueDays: '逾期天数',
     overdueAmount: '逾期金额',
     noData: '暂无数据',
     creator: '创建人',
@@ -913,6 +932,31 @@ export const translations: Record<Language, Translations> = {
     chinese: '中文',
     english: 'English',
     indonesian: 'Bahasa',
+    normalReduction: '常规减免',
+    specialReduction: '特殊减免',
+    settle: '结清',
+    nonSettle: '非结清',
+    settleRule: '结清规则',
+    nonSettleRule: '非结清规则',
+    pleaseSelectSettlementType: '请选择结算类型',
+    normalReductionRule: '常规减免规则',
+    specialReductionRule: '特殊减免规则',
+    addSpecialReductionRule: '添加特殊减免规则',
+    editSpecialReductionRule: '编辑特殊减免规则',
+    subjectDetail: '科目明细',
+    principal: '本金',
+    interest: '利息',
+    penalty: '罚息',
+    maxReduction: '最高可减免',
+    finalPaymentAmount: '减免后应还总额',
+    settlementType: '结算类型',
+    reductionType: '减免类型',
+    settlementRecord: '平账记录',
+    paidPrincipal: '已还本金',
+    paidInterest: '已还利息',
+    paidPenalty: '已还罚息',
+    paid: '已结清',
+    unpaid: '未结清',
   },
   en: {
     // 工单审核相关
@@ -1002,10 +1046,8 @@ export const translations: Record<Language, Translations> = {
     description: 'Description',
     permissionCount: 'Permission Count',
     normalStatus: 'Normal Status',
-    minOverdueDays: 'Min Overdue Days',
-    pleaseInputMinOverdueDays: 'Please input min overdue days',
-    maxOverdueDays: 'Max Overdue Days',
-    pleaseInputMaxOverdueDays: 'Please input max overdue days',
+    overdueDays: 'Overdue Days',
+    pleaseInputOverdueDays: 'Please input overdue days',
     reductionMethod: 'Reduction Method',
     pleaseSelectReductionMethod: 'Please select reduction method',
     fixedAmount: 'Fixed Amount',
@@ -1116,7 +1158,6 @@ export const translations: Record<Language, Translations> = {
     selectedCount: 'Selected',
     casesSuffix: 'cases',
     borrowerName: 'Borrower',
-    overdueDays: 'Overdue Days',
     overdueAmount: 'Overdue Amount',
     noData: 'No Data',
     creator: 'Creator',
@@ -1357,6 +1398,31 @@ export const translations: Record<Language, Translations> = {
     chinese: '中文',
     english: 'English',
     indonesian: 'Bahasa',
+    normalReduction: 'Regular Reduction',
+    specialReduction: 'Special Reduction',
+    settle: 'Settle',
+    nonSettle: 'Non-Settle',
+    settleRule: 'Settle Rule',
+    nonSettleRule: 'Non-Settle Rule',
+    pleaseSelectSettlementType: 'Please select settlement type',
+    normalReductionRule: 'Regular Reduction Rule',
+    specialReductionRule: 'Special Reduction Rule',
+    addSpecialReductionRule: 'Add Special Reduction Rule',
+    editSpecialReductionRule: 'Edit Special Reduction Rule',
+    subjectDetail: 'Subject Detail',
+    principal: 'Principal',
+    interest: 'Interest',
+    penalty: 'Penalty',
+    maxReduction: 'Max Reduction',
+    finalPaymentAmount: 'Final Payment Amount',
+    settlementType: 'Settlement Type',
+    reductionType: 'Reduction Type',
+    settlementRecord: 'Settlement Record',
+    paidPrincipal: 'Paid Principal',
+    paidInterest: 'Paid Interest',
+    paidPenalty: 'Paid Penalty',
+    paid: 'Paid',
+    unpaid: 'Unpaid',
   },
   id: {
     // 工单审核相关
@@ -1446,10 +1512,8 @@ export const translations: Record<Language, Translations> = {
     description: 'Deskripsi',
     permissionCount: 'Jumlah Izin',
     normalStatus: 'Status Normal',
-    minOverdueDays: 'Hari Tertinggal Minimum',
-    pleaseInputMinOverdueDays: 'Silakan masukkan hari tertinggal minimum',
-    maxOverdueDays: 'Hari Tertinggal Maksimum',
-    pleaseInputMaxOverdueDays: 'Silakan masukkan hari tertinggal maksimum',
+    overdueDays: 'Hari Tertinggal',
+    pleaseInputOverdueDays: 'Silakan masukkan hari tertinggal',
     reductionMethod: 'Metode Pengurangan',
     pleaseSelectReductionMethod: 'Silakan pilih metode pengurangan',
     fixedAmount: 'Jumlah Tetap',
@@ -1560,7 +1624,6 @@ export const translations: Record<Language, Translations> = {
     selectedCount: 'Dipilih',
     casesSuffix: 'kasus',
     borrowerName: 'Nama',
-    overdueDays: 'Hari',
     overdueAmount: 'Jumlah',
     noData: 'Tidak ada',
     creator: 'Pembuat',
@@ -1801,5 +1864,30 @@ export const translations: Record<Language, Translations> = {
     chinese: '中文',
     english: 'English',
     indonesian: 'Bahasa',
+    normalReduction: 'Pengurangan Reguler',
+    specialReduction: 'Pengurangan Khusus',
+    settle: 'Pelunasan',
+    nonSettle: 'Non-Pelunasan',
+    settleRule: 'Aturan Pelunasan',
+    nonSettleRule: 'Aturan Non-Pelunasan',
+    pleaseSelectSettlementType: 'Silakan pilih jenis pelunasan',
+    normalReductionRule: 'Aturan Pengurangan Reguler',
+    specialReductionRule: 'Aturan Pengurangan Khusus',
+    addSpecialReductionRule: 'Tambah Aturan Pengurangan Khusus',
+    editSpecialReductionRule: 'Edit Aturan Pengurangan Khusus',
+    subjectDetail: 'Detail Subjek',
+    principal: 'Pokok',
+    interest: 'Bunga',
+    penalty: 'Denda',
+    maxReduction: 'Pengurangan Maks',
+    finalPaymentAmount: 'Jumlah Pembayaran Akhir',
+    settlementType: 'Jenis Pelunasan',
+    reductionType: 'Jenis Pengurangan',
+    settlementRecord: 'Catatan Pelunasan',
+    paidPrincipal: 'Pokok Dibayar',
+    paidInterest: 'Bunga Dibayar',
+    paidPenalty: 'Denda Dibayar',
+    paid: 'Dibayar',
+    unpaid: 'Belum Dibayar',
   },
 };

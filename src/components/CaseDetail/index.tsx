@@ -40,6 +40,8 @@ import {
   UpOutlined
 } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { ReductionRule, ReductionType } from '../../types';
+import { findMatchingRule, calculateMaxReduction, allocateReduction } from '../../utils/reductionCalc';
 
 // 银行logo映射
 const bankLogos: Record<string, string> = {
@@ -320,20 +322,20 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
   // 账单数据 - 模拟2笔6期的订单（测试数据：多期未还款，便于测试期次多选和金额调整）
   const bills: Bill[] = [
     // 订单1: ORD001 (6期) - 前2期已还，后4期逾期/未还
-    { id: 'B001', orderId: 'ORD001', billNumber: 'INV-2024-0115', installments: 'Month 1', dueDate: '15 Jan 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
-    { id: 'B002', orderId: 'ORD001', billNumber: 'INV-2024-0215', installments: 'Month 2', dueDate: '15 Feb 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
-    { id: 'B003', orderId: 'ORD001', billNumber: 'INV-2024-0315', installments: 'Month 3', dueDate: '15 Mar 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
-    { id: 'B004', orderId: 'ORD001', billNumber: 'INV-2024-0415', installments: 'Month 4', dueDate: '15 Apr 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
-    { id: 'B005', orderId: 'ORD001', billNumber: 'INV-2024-0515', installments: 'Month 5', dueDate: '15 May 2024', amount: 2800000, paidAmount: 0, status: 'overdue', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
-    { id: 'B006', orderId: 'ORD001', billNumber: 'INV-2024-0615', installments: 'Month 6', dueDate: '15 Jun 2024', amount: 2800000, paidAmount: 0, status: 'unpaid', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
+    { id: 'B001', orderId: 'ORD001', billNumber: 'INV-2024-0115', installments: 'Installment 1', dueDate: '15 Jan 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B002', orderId: 'ORD001', billNumber: 'INV-2024-0215', installments: 'Installment 2', dueDate: '15 Feb 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B003', orderId: 'ORD001', billNumber: 'INV-2024-0315', installments: 'Installment 3', dueDate: '15 Mar 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B004', orderId: 'ORD001', billNumber: 'INV-2024-0415', installments: 'Installment 4', dueDate: '15 Apr 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B005', orderId: 'ORD001', billNumber: 'INV-2024-0515', installments: 'Installment 5', dueDate: '15 May 2024', amount: 2800000, paidAmount: 0, status: 'overdue', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
+    { id: 'B006', orderId: 'ORD001', billNumber: 'INV-2024-0615', installments: 'Installment 6', dueDate: '15 Jun 2024', amount: 2800000, paidAmount: 0, status: 'unpaid', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
     
     // 订单2: ORD002 (6期) - 全部未还，便于测试多选
-    { id: 'B007', orderId: 'ORD002', billNumber: 'INV-2024-0701', installments: 'Month 1', dueDate: '01 Jul 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
-    { id: 'B008', orderId: 'ORD002', billNumber: 'INV-2024-0801', installments: 'Month 2', dueDate: '01 Aug 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
-    { id: 'B009', orderId: 'ORD002', billNumber: 'INV-2024-0901', installments: 'Month 3', dueDate: '01 Sep 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
-    { id: 'B010', orderId: 'ORD002', billNumber: 'INV-2024-1001', installments: 'Month 4', dueDate: '01 Oct 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
-    { id: 'B011', orderId: 'ORD002', billNumber: 'INV-2024-1101', installments: 'Month 5', dueDate: '01 Nov 2024', amount: 3200000, paidAmount: 0, status: 'unpaid', principal: 2500000, interest: 400000, serviceFee: 200000, penalty: 100000 },
-    { id: 'B012', orderId: 'ORD002', billNumber: 'INV-2024-1201', installments: 'Month 6', dueDate: '01 Dec 2024', amount: 3200000, paidAmount: 0, status: 'unpaid', principal: 2500000, interest: 400000, serviceFee: 200000, penalty: 100000 },
+    { id: 'B007', orderId: 'ORD002', billNumber: 'INV-2024-0701', installments: 'Installment 1', dueDate: '01 Jul 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
+    { id: 'B008', orderId: 'ORD002', billNumber: 'INV-2024-0801', installments: 'Installment 2', dueDate: '01 Aug 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
+    { id: 'B009', orderId: 'ORD002', billNumber: 'INV-2024-0901', installments: 'Installment 3', dueDate: '01 Sep 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
+    { id: 'B010', orderId: 'ORD002', billNumber: 'INV-2024-1001', installments: 'Installment 4', dueDate: '01 Oct 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
+    { id: 'B011', orderId: 'ORD002', billNumber: 'INV-2024-1101', installments: 'Installment 5', dueDate: '01 Nov 2024', amount: 3200000, paidAmount: 0, status: 'unpaid', principal: 2500000, interest: 400000, serviceFee: 200000, penalty: 100000 },
+    { id: 'B012', orderId: 'ORD002', billNumber: 'INV-2024-1201', installments: 'Installment 6', dueDate: '01 Dec 2024', amount: 3200000, paidAmount: 0, status: 'unpaid', principal: 2500000, interest: 400000, serviceFee: 200000, penalty: 100000 },
   ];
 
   // VA码数据
@@ -459,26 +461,27 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
   ]);
 
   // 减免规则（模拟）
-  const reductionRules = {
-    minOverdueDays: 30,
-    maxReductionPercent: 30,
-    minBillAmount: 1000000,
-    description: 'Maximum 30% reduction for bills overdue more than 30 days',
-  };
+  const reductionRules: ReductionRule[] = [
+    { id: 'R1', name: '消费贷-结清-30天', products: ['消费贷'], overdueDays: 30, settlementType: 'settle', subjectCaps: { principal: 0, interest: 50, penalty: 100 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
+    { id: 'R2', name: '消费贷-结清-90天', products: ['消费贷'], overdueDays: 90, settlementType: 'settle', subjectCaps: { principal: 10, interest: 70, penalty: 100 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
+    { id: 'R3', name: '消费贷-非结清-30天', products: ['消费贷'], overdueDays: 30, settlementType: 'nonSettle', subjectCaps: { principal: 0, interest: 30, penalty: 50 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
+    { id: 'R4', name: '消费贷-非结清-90天', products: ['消费贷'], overdueDays: 90, settlementType: 'nonSettle', subjectCaps: { principal: 0, interest: 50, penalty: 70 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
+  ];
 
-  // 请求减免金额（按科目拆分）
-  const [reductionByCategory, setReductionByCategory] = useState<Record<string, number>>({
-    principal: 0,
-    interest: 0,
-    serviceFee: 0,
-    penalty: 0,
-  });
-  
+  // 当前产品
+  const currentProduct = '消费贷';
+
+  // 逾期天数
+  const overdueDays = 45;
+
+  // 减免类型
+  const [reductionType, setReductionType] = useState<ReductionType>('nonSettle');
+
+  // 请求减免金额
+  const [requestedReduction, setRequestedReduction] = useState<number>(0);
+
   // 减免申请理由
   const [reductionReason, setReductionReason] = useState<string>('');
-  
-  // 当前选中的期次
-  const [selectedInstallments, setSelectedInstallments] = useState<string[]>([]);
 
   // 状态管理
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -506,40 +509,79 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     });
   };
 
+  // 获取选中账单对应的账单数据
+  const getSelectedBills = useMemo(() => {
+    return selectedBills.map(billId => {
+      const bill = bills.find(b => b.id === billId);
+      return bill;
+    }).filter(Boolean) as typeof bills;
+  }, [selectedBills, bills]);
+
   // 计算最大可减免金额
-  const maxReductionAmount = useMemo(() => {
-    const unpaidBills = bills.filter(b => b.status !== 'paid');
-    const totalUnpaid = unpaidBills.reduce((sum, bill) => sum + bill.amount, 0);
-    return Math.floor(totalUnpaid * (reductionRules.maxReductionPercent / 100));
-  }, [bills]);
+  const reductionCalculation = useMemo(() => {
+    if (getSelectedBills.length === 0) {
+      return { maxReduction: 0, breakdown: { principal: 0, interest: 0, penalty: 0 }, billDetails: [], appliedRule: null };
+    }
 
-  // 计算选中期次中各科目的最大可减免金额
-  const categoryMaxAmounts = useMemo(() => {
-    const selectedBillIds = selectedInstallments.map(inst => {
-      const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
-      return bill?.id;
-    }).filter(Boolean) as string[];
+    if (reductionType === 'settle') {
+      const matchingRule = findMatchingRule(reductionRules, currentProduct, overdueDays, 'settle');
+      if (matchingRule) {
+        const { maxReduction, breakdown, billDetails } = calculateMaxReduction(getSelectedBills, matchingRule);
+        return { maxReduction, breakdown, billDetails, appliedRule: matchingRule };
+      }
+    } else if (reductionType === 'nonSettle') {
+      const matchingRule = findMatchingRule(reductionRules, currentProduct, overdueDays, 'nonSettle');
+      if (matchingRule) {
+        const { maxReduction, breakdown, billDetails } = calculateMaxReduction(getSelectedBills, matchingRule);
+        return { maxReduction, breakdown, billDetails, appliedRule: matchingRule };
+      }
+    }
 
-    const selectedBillsData = bills.filter(b => selectedBillIds.includes(b.id));
-    
-    return {
-      penalty: selectedBillsData.reduce((sum, bill) => sum + (bill.penalty || 0), 0),
-      serviceFee: selectedBillsData.reduce((sum, bill) => sum + (bill.serviceFee || 0), 0),
-      interest: selectedBillsData.reduce((sum, bill) => sum + (bill.interest || 0), 0),
-      principal: selectedBillsData.reduce((sum, bill) => sum + (bill.principal || 0), 0),
-    };
-  }, [selectedInstallments, bills]);
+    return { maxReduction: 0, breakdown: { principal: 0, interest: 0, penalty: 0 }, billDetails: [], appliedRule: null };
+  }, [getSelectedBills, reductionType, currentProduct, overdueDays]);
 
-  // 检查是否符合减免条件
+  // 计算减免后应还总额
+  const selectedTotal = useMemo(() => {
+    return getSelectedBills.reduce((sum, bill) => sum + bill.amount, 0);
+  }, [getSelectedBills]);
+
+  const afterReductionTotal = useMemo(() => {
+    return Math.max(0, selectedTotal - requestedReduction);
+  }, [selectedTotal, requestedReduction]);
+
+  // 获取分配后的减免明细
+  const allocatedDetails = useMemo(() => {
+    if ((reductionType === 'settle' || reductionType === 'nonSettle') && reductionCalculation.appliedRule) {
+      const rule = reductionCalculation.appliedRule as ReductionRule;
+      return allocateReduction(getSelectedBills, rule, requestedReduction);
+    }
+    return null;
+  }, [getSelectedBills, reductionType, requestedReduction]);
+
+  // 检查是否符合减免条件（必须有账单被选中）
   const canApplyReduction = useMemo(() => {
-    const overdueBills = bills.filter(b => b.status === 'overdue');
-    if (overdueBills.length === 0) return false;
-    const earliestOverdue = overdueBills[0];
-    const dueDate = new Date(earliestOverdue.dueDate);
-    const now = new Date();
-    const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-    return daysOverdue >= reductionRules.minOverdueDays;
-  }, [bills]);
+    if (selectedBills.length === 0) return false;
+    return true;
+  }, [selectedBills]);
+
+  // 判断是否选中了某一订单的全部未结清账单
+  const isAllUnpaidSelected = useMemo(() => {
+    if (selectedBills.length === 0) return false;
+    
+    const selectedBillObjs = selectedBills.map(id => bills.find(b => b.id === id)).filter(Boolean);
+    if (selectedBillObjs.length === 0) return false;
+    
+    const orders = new Set(selectedBillObjs.map(b => b!.orderId));
+    if (orders.size !== 1) return false;
+    
+    const selectedOrderId = orders.values().next().value;
+    const orderUnpaidBills = bills.filter(b => b.orderId === selectedOrderId && b.status !== 'paid');
+    
+    if (orderUnpaidBills.length === 0) return false;
+    
+    const selectedBillSet = new Set(selectedBills);
+    return orderUnpaidBills.every(bill => selectedBillSet.has(bill.id));
+  }, [selectedBills, bills]);
 
   // 获取有效VA码
   const activeVA = useMemo(() => vaList.filter(va => va.status === 'active'), [vaList]);
@@ -599,15 +641,12 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
 
   // 申请减免
   const handleApplyReduction = useCallback(() => {
-    if (selectedInstallments.length === 0) {
-      message.error('请选择要申请减免的期次');
+    if (selectedBills.length === 0) {
+      message.error('请选择要申请减免的账单');
       return;
     }
     
-    const selectedBillIds = selectedInstallments.map(inst => {
-      const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
-      return bill?.id;
-    }).filter(Boolean) as string[];
+    const selectedBillIds = selectedBills;
     
     const selectedOrders = new Set(selectedBillIds.map(billId => {
       const bill = bills.find(b => b.id === billId);
@@ -624,38 +663,36 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       return;
     }
     
-    const totalAmount = selectedInstallments.reduce((sum, inst) => {
-      const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
-      return sum + (bill?.amount || 0);
-    }, 0);
-    
-    const requestedReduction = Object.values(reductionByCategory).reduce((sum, val) => sum + val, 0);
-    
     if (requestedReduction === 0) {
       message.error('请输入减免金额');
       return;
     }
-    
+
+    if (requestedReduction > reductionCalculation.maxReduction) {
+      message.error(`超出最大可减免额度，最大可减免 ${formatIDR(reductionCalculation.maxReduction)} IDR`);
+      return;
+    }
+
     const newApplication: ReductionApplication = {
       id: `RA${Date.now()}`,
       applicationId: `RED-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`,
       billIds: selectedBillIds,
-      totalAmount,
+      totalAmount: selectedTotal,
       requestedReduction,
       approvedReduction: 0,
       reason: reductionReason,
       status: 'pending',
-      applyTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + 
+      applyTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' +
                  new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
     };
-    
+
     setReductionApplications(prev => [newApplication, ...prev]);
     setReductionReason('');
-    setSelectedInstallments([]);
-    setReductionByCategory({ principal: 0, interest: 0, serviceFee: 0, penalty: 0 });
+    setRequestedReduction(0);
+    setReductionType('nonSettle');
     message.success(`减免申请提交成功！申请编号: ${newApplication.applicationId}`);
     setReductionModalVisible(false);
-  }, [selectedInstallments, bills, reductionReason, reductionByCategory]);
+  }, [selectedBills, bills, reductionReason, requestedReduction, reductionType, selectedTotal, reductionCalculation]);
 
   const images = [
     { id: '1', name: 'KTP (身份证)', type: '证件', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=Indonesian%20KTP%20identity%20card%20front%20view%20official%20document&image_size=portrait_4_3' },
@@ -1521,7 +1558,10 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
             {canApplyReduction && (
               <Button 
                 type="primary" 
-                onClick={() => setReductionModalVisible(true)}
+                onClick={() => {
+                  setReductionType(isAllUnpaidSelected ? 'settle' : 'nonSettle');
+                  setReductionModalVisible(true);
+                }}
                 style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
               >
                 Apply Reduction
@@ -2166,62 +2206,48 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
         open={reductionModalVisible}
         onCancel={() => {
           setReductionModalVisible(false);
-          setSelectedInstallments([]);
-          setReductionByCategory({ principal: 0, interest: 0, serviceFee: 0, penalty: 0 });
+          setRequestedReduction(0);
+          setReductionType('nonSettle');
         }}
         onOk={handleApplyReduction}
-        width={700}
+        width={750}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Select Installments */}
+          {/* Settlement Type */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Select Installments <span style={{ color: '#ef4444' }}>*</span></label>
-            <div style={{ backgroundColor: '#f9fafb', borderRadius: '8px', padding: '12px' }}>
-              {(() => {
-                const unpaidBills = bills.filter(b => b.status !== 'paid');
-                const installments = [...new Set(unpaidBills.map(b => b.installments))];
-                return (
-                  <Select
-                    mode="multiple"
-                    placeholder="Select installments to apply reduction"
-                    value={selectedInstallments}
-                    onChange={setSelectedInstallments}
-                    style={{ width: '100%' }}
-                    options={installments.map(inst => ({ value: inst, label: inst }))}
-                  />
-                );
-              })()}
-            </div>
+            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Settlement Type <span style={{ color: '#ef4444' }}>*</span></label>
+            <Radio.Group value={reductionType} onChange={(e) => {
+              setReductionType(e.target.value);
+              setRequestedReduction(0);
+            }}>
+              <Radio value="nonSettle">Non-Settle (非结清)</Radio>
+              <Radio value="settle" style={{ marginLeft: '16px' }}>Settle (结清)</Radio>
+            </Radio.Group>
           </div>
 
           {/* Selected Bills Summary */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Selected Bills ({selectedInstallments.length})</label>
+            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Selected Bills ({selectedBills.length})</label>
             <div style={{ backgroundColor: '#f9fafb', borderRadius: '8px', padding: '12px', maxHeight: '150px', overflowY: 'auto' }}>
-              {selectedInstallments.length > 0 ? (
+              {selectedBills.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {selectedInstallments.map(inst => {
-                    const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
+                  {selectedBills.map(billId => {
+                    const bill = bills.find(b => b.id === billId);
                     return bill ? (
-                      <div key={inst} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '13px', color: '#1f2937' }}>{bill.billNumber} ({inst})</span>
+                      <div key={bill.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', color: '#1f2937' }}>{bill.billNumber} ({bill.installments})</span>
                         <span style={{ fontSize: '13px', fontWeight: '500', color: '#0d4f3c' }}>{formatIDR(bill.amount)} IDR</span>
                       </div>
                     ) : null;
                   })}
                   <Divider style={{ margin: '8px 0' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#1f2937' }}>
-                    <span>Total Amount</span>
-                    <span style={{ color: '#0d4f3c' }}>
-                      {formatIDR(selectedInstallments.reduce((sum, inst) => {
-                        const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
-                        return sum + (bill?.amount || 0);
-                      }, 0))} IDR
-                    </span>
+                    <span>Original Amount</span>
+                    <span style={{ color: '#0d4f3c' }}>{formatIDR(selectedBillsTotal)} IDR</span>
                   </div>
                 </div>
               ) : (
-                <p style={{ color: '#9ca3af', textAlign: 'center', margin: 0 }}>Please select installments</p>
+                <p style={{ color: '#9ca3af', textAlign: 'center', margin: 0 }}>No bills selected</p>
               )}
             </div>
           </div>
@@ -2230,141 +2256,68 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
           <div style={{ backgroundColor: '#fef3c7', borderRadius: '8px', padding: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '14px', fontWeight: '600', color: '#92400e' }}>Maximum Reduction Amount</span>
-              <span style={{ fontSize: '20px', fontWeight: '700', color: '#f59e0b' }}>{formatIDR(maxReductionAmount)} IDR</span>
+              <span style={{ fontSize: '20px', fontWeight: '700', color: '#f59e0b' }}>{formatIDR(reductionCalculation.maxReduction)} IDR</span>
             </div>
-            <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#b45309' }}>
-              Based on reduction rules: {reductionRules.description}
-            </p>
+            {(reductionType === 'settle' || reductionType === 'nonSettle') && reductionCalculation.breakdown && (
+              <div style={{ display: 'flex', gap: '16px', marginTop: '8px', fontSize: '12px', color: '#b45309' }}>
+                <span>Principal: {formatIDR(reductionCalculation.breakdown.principal)}</span>
+                <span>Interest: {formatIDR(reductionCalculation.breakdown.interest)}</span>
+                <span>Penalty: {formatIDR(reductionCalculation.breakdown.penalty)}</span>
+              </div>
+            )}
           </div>
 
-          {/* Reduction by Category */}
+          {/* Requested Reduction Amount */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Reduction by Category</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Principal (本金)</label>
-                <InputNumber
-                  min={0}
-                  max={categoryMaxAmounts.principal}
-                  value={reductionByCategory.principal || undefined}
-                  onChange={(value) => {
-                    const newVal = value || 0;
-                    const currentTotal = (reductionByCategory.interest || 0) + (reductionByCategory.serviceFee || 0) + (reductionByCategory.penalty || 0);
-                    if (newVal <= categoryMaxAmounts.principal && newVal + currentTotal <= maxReductionAmount) {
-                      setReductionByCategory(prev => ({ ...prev, principal: newVal }));
-                    } else {
-                      message.error(`本金减免不能超过 ${formatIDR(categoryMaxAmounts.principal)} IDR`);
-                    }
-                  }}
-                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                  parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
-                  style={{ width: '100%' }}
-                  placeholder={`Max: ${formatIDR(categoryMaxAmounts.principal)}`}
-                  disabled={(
-                    (reductionByCategory.penalty || 0) < categoryMaxAmounts.penalty ||
-                    (reductionByCategory.serviceFee || 0) < categoryMaxAmounts.serviceFee ||
-                    (reductionByCategory.interest || 0) < categoryMaxAmounts.interest
-                  ) || (
-                    (reductionByCategory.penalty || 0) + (reductionByCategory.serviceFee || 0) + (reductionByCategory.interest || 0) >= maxReductionAmount
-                  )}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Interest (利息)</label>
-                <InputNumber
-                  min={0}
-                  max={categoryMaxAmounts.interest}
-                  value={reductionByCategory.interest || undefined}
-                  onChange={(value) => {
-                    const newVal = value || 0;
-                    const currentTotal = (reductionByCategory.principal || 0) + (reductionByCategory.serviceFee || 0) + (reductionByCategory.penalty || 0);
-                    if (newVal <= categoryMaxAmounts.interest && newVal + currentTotal <= maxReductionAmount) {
-                      setReductionByCategory(prev => ({ ...prev, interest: newVal }));
-                    } else {
-                      message.error(`利息减免不能超过 ${formatIDR(categoryMaxAmounts.interest)} IDR`);
-                    }
-                  }}
-                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                  parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
-                  style={{ width: '100%' }}
-                  placeholder={`Max: ${formatIDR(categoryMaxAmounts.interest)}`}
-                  disabled={(
-                    (reductionByCategory.penalty || 0) < categoryMaxAmounts.penalty ||
-                    (reductionByCategory.serviceFee || 0) < categoryMaxAmounts.serviceFee
-                  ) || (
-                    (reductionByCategory.penalty || 0) + (reductionByCategory.serviceFee || 0) >= maxReductionAmount
-                  )}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Service Fee (服务费)</label>
-                <InputNumber
-                  min={0}
-                  max={categoryMaxAmounts.serviceFee}
-                  value={reductionByCategory.serviceFee || undefined}
-                  onChange={(value) => {
-                    const newVal = value || 0;
-                    const currentTotal = (reductionByCategory.principal || 0) + (reductionByCategory.interest || 0) + (reductionByCategory.penalty || 0);
-                    if (newVal <= categoryMaxAmounts.serviceFee && newVal + currentTotal <= maxReductionAmount) {
-                      setReductionByCategory(prev => ({ ...prev, serviceFee: newVal }));
-                    } else {
-                      message.error(`服务费减免不能超过 ${formatIDR(categoryMaxAmounts.serviceFee)} IDR`);
-                    }
-                  }}
-                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                  parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
-                  style={{ width: '100%' }}
-                  placeholder={`Max: ${formatIDR(categoryMaxAmounts.serviceFee)}`}
-                  disabled={(
-                    (reductionByCategory.penalty || 0) < categoryMaxAmounts.penalty
-                  ) || (
-                    (reductionByCategory.penalty || 0) >= maxReductionAmount
-                  )}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Penalty (罚息)</label>
-                <InputNumber
-                  min={0}
-                  max={categoryMaxAmounts.penalty}
-                  value={reductionByCategory.penalty || undefined}
-                  onChange={(value) => {
-                    const newVal = value || 0;
-                    const currentTotal = (reductionByCategory.principal || 0) + (reductionByCategory.interest || 0) + (reductionByCategory.serviceFee || 0);
-                    if (newVal <= categoryMaxAmounts.penalty && newVal + currentTotal <= maxReductionAmount) {
-                      setReductionByCategory(prev => ({ ...prev, penalty: newVal }));
-                    } else {
-                      message.error(`罚息减免不能超过 ${formatIDR(categoryMaxAmounts.penalty)} IDR`);
-                    }
-                  }}
-                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                  parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
-                  style={{ width: '100%' }}
-                  placeholder={`Max: ${formatIDR(categoryMaxAmounts.penalty)}`}
-                  disabled={false}
-                />
+            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Requested Reduction Amount <span style={{ color: '#ef4444' }}>*</span></label>
+            <InputNumber
+              min={0}
+              max={reductionCalculation.maxReduction}
+              value={requestedReduction}
+              onChange={(value) => {
+                const newVal = value || 0;
+                if (newVal <= reductionCalculation.maxReduction) {
+                  setRequestedReduction(newVal);
+                } else {
+                  message.error(`超出最大可减免额度，最大可减免 ${formatIDR(reductionCalculation.maxReduction)} IDR`);
+                }
+              }}
+              formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+              parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
+              style={{ width: '100%' }}
+              placeholder={`Max: ${formatIDR(reductionCalculation.maxReduction)}`}
+              disabled={reductionCalculation.maxReduction === 0}
+            />
+          </div>
+
+          {/* Subject Breakdown */}
+          {(reductionType === 'settle' || reductionType === 'nonSettle') && allocatedDetails && requestedReduction > 0 && (
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Reduction Breakdown</label>
+              <div style={{ backgroundColor: '#f9fafb', borderRadius: '8px', padding: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '6px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Principal (本金)</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#f97316' }}>-{formatIDR(allocatedDetails.allocatedBreakdown.principal)} IDR</div>
+                  </div>
+                  <div style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '6px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Interest (利息)</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#f97316' }}>-{formatIDR(allocatedDetails.allocatedBreakdown.interest)} IDR</div>
+                  </div>
+                  <div style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '6px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>Penalty (罚息)</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#f97316' }}>-{formatIDR(allocatedDetails.allocatedBreakdown.penalty)} IDR</div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div style={{ marginTop: '8px', fontSize: '11px', color: '#9ca3af', fontStyle: 'italic' }}>
-                减免优先级：罚息 &gt; 服务费 &gt; 利息 &gt; 本金
-              </div>
-          </div>
-          <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f0fdf4', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '500', color: '#065f46' }}>Total Requested Reduction</span>
-                <span style={{ fontSize: '18px', fontWeight: '700', color: '#059669' }}>
-                  -{formatIDR(Object.values(reductionByCategory).reduce((sum, val) => sum + val, 0))} IDR
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #bbf7d0' }}>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: '#065f46' }}>Amount Payable After Reduction</span>
-                <span style={{ fontSize: '20px', fontWeight: '700', color: '#0d4f3c' }}>
-                  {formatIDR(selectedInstallments.reduce((sum, inst) => {
-                    const bill = bills.find(b => b.installments === inst && b.status !== 'paid');
-                    return sum + (bill?.amount || 0);
-                  }, 0) - Object.values(reductionByCategory).reduce((sum, val) => sum + val, 0))} IDR
-                </span>
-              </div>
+          )}
+
+          {/* Amount After Reduction */}
+          <div style={{ padding: '16px', backgroundColor: '#f0fdf4', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #bbf7d0' }}>
+              <span style={{ fontSize: '14px', fontWeight: '600', color: '#065f46' }}>Amount Payable After Reduction</span>
+              <span style={{ fontSize: '20px', fontWeight: '700', color: '#0d4f3c' }}>{formatIDR(afterReductionTotal)} IDR</span>
             </div>
           </div>
 
@@ -2385,6 +2338,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
               <strong>Notice:</strong> After submission, the application will be reviewed by the supervisor. Once approved, a payment code will be generated for the customer.
             </div>
           </div>
+        </div>
       </Modal>
 
       {/* Warning Letter Preview Modal */}
