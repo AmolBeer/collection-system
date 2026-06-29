@@ -145,7 +145,11 @@ export interface Translations {
   // 减免规则
   normalStatus: string;
   overdueDays: string;
+  minOverdueDays: string;
+  maxOverdueDays: string;
   pleaseInputOverdueDays: string;
+  pleaseInputMinOverdueDays: string;
+  pleaseInputMaxOverdueDays: string;
   reductionMethod: string;
   pleaseSelectReductionMethod: string;
   fixedAmount: string;
@@ -581,7 +585,11 @@ export const translations: Record<Language, Translations> = {
     permissionCount: '权限数量',
     normalStatus: '正常状态',
     overdueDays: '逾期天数',
+    minOverdueDays: '最小逾期天数',
+    maxOverdueDays: '最大逾期天数',
     pleaseInputOverdueDays: '请输入逾期天数',
+    pleaseInputMinOverdueDays: '请输入最小逾期天数',
+    pleaseInputMaxOverdueDays: '请输入最大逾期天数',
     reductionMethod: '减免方式',
     pleaseSelectReductionMethod: '请选择减免方式',
     fixedAmount: '固定金额',
@@ -1047,7 +1055,11 @@ export const translations: Record<Language, Translations> = {
     permissionCount: 'Permission Count',
     normalStatus: 'Normal Status',
     overdueDays: 'Overdue Days',
+    minOverdueDays: 'Min Overdue Days',
+    maxOverdueDays: 'Max Overdue Days',
     pleaseInputOverdueDays: 'Please input overdue days',
+    pleaseInputMinOverdueDays: 'Please input minimum overdue days',
+    pleaseInputMaxOverdueDays: 'Please input maximum overdue days',
     reductionMethod: 'Reduction Method',
     pleaseSelectReductionMethod: 'Please select reduction method',
     fixedAmount: 'Fixed Amount',
@@ -1513,7 +1525,11 @@ export const translations: Record<Language, Translations> = {
     permissionCount: 'Jumlah Izin',
     normalStatus: 'Status Normal',
     overdueDays: 'Hari Tertinggal',
+    minOverdueDays: 'Min Hari Tertinggal',
+    maxOverdueDays: 'Max Hari Tertinggal',
     pleaseInputOverdueDays: 'Silakan masukkan hari tertinggal',
+    pleaseInputMinOverdueDays: 'Silakan masukkan hari tertinggal minimum',
+    pleaseInputMaxOverdueDays: 'Silakan masukkan hari tertinggal maksimum',
     reductionMethod: 'Metode Pengurangan',
     pleaseSelectReductionMethod: 'Silakan pilih metode pengurangan',
     fixedAmount: 'Jumlah Tetap',

@@ -15,9 +15,10 @@ const products = [
 const defaultRules: ReductionRule[] = [
   {
     id: '1',
-    name: '产品A-结清-30天',
+    name: '产品A-结清-0-30天',
     products: ['消费贷'],
-    overdueDays: 30,
+    minOverdueDays: 0,
+    maxOverdueDays: 30,
     settlementType: 'settle',
     subjectCaps: { principal: 0, interest: 50, penalty: 100 },
     enabled: true,
@@ -28,9 +29,10 @@ const defaultRules: ReductionRule[] = [
   },
   {
     id: '2',
-    name: '产品A-结清-90天',
+    name: '产品A-结清-31-90天',
     products: ['消费贷'],
-    overdueDays: 90,
+    minOverdueDays: 31,
+    maxOverdueDays: 90,
     settlementType: 'settle',
     subjectCaps: { principal: 10, interest: 70, penalty: 100 },
     enabled: true,
@@ -41,9 +43,10 @@ const defaultRules: ReductionRule[] = [
   },
   {
     id: '3',
-    name: '产品A-非结清-30天',
+    name: '产品A-非结清-0-30天',
     products: ['消费贷'],
-    overdueDays: 30,
+    minOverdueDays: 0,
+    maxOverdueDays: 30,
     settlementType: 'nonSettle',
     subjectCaps: { principal: 0, interest: 30, penalty: 50 },
     enabled: true,
@@ -54,9 +57,10 @@ const defaultRules: ReductionRule[] = [
   },
   {
     id: '4',
-    name: '产品B-结清-30天',
+    name: '产品B-结清-0-30天',
     products: ['经营贷'],
-    overdueDays: 30,
+    minOverdueDays: 0,
+    maxOverdueDays: 30,
     settlementType: 'settle',
     subjectCaps: { principal: 0, interest: 40, penalty: 80 },
     enabled: true,
@@ -67,9 +71,10 @@ const defaultRules: ReductionRule[] = [
   },
   {
     id: '5',
-    name: '产品B-结清-90天',
+    name: '产品B-结清-31-90天',
     products: ['经营贷'],
-    overdueDays: 90,
+    minOverdueDays: 31,
+    maxOverdueDays: 90,
     settlementType: 'settle',
     subjectCaps: { principal: 5, interest: 60, penalty: 100 },
     enabled: false,
@@ -489,13 +494,22 @@ const ReductionRuleConfig: React.FC = () => {
               ))}
             </Select>
           </Form.Item>
-          <Form.Item
-            name="overdueDays"
-            label={t.overdueDays}
-            rules={[{ required: true, message: t.pleaseInputOverdueDays }]}
-          >
-            <InputNumber min={0} placeholder={t.overdueDays} style={{ width: '100%' }} />
-          </Form.Item>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <Form.Item
+              name="minOverdueDays"
+              label={t.minOverdueDays}
+              rules={[{ required: true, message: t.pleaseInputMinOverdueDays }]}
+            >
+              <InputNumber min={0} placeholder={t.minOverdueDays} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item
+              name="maxOverdueDays"
+              label={t.maxOverdueDays}
+              rules={[{ required: true, message: t.pleaseInputMaxOverdueDays }]}
+            >
+              <InputNumber min={0} placeholder={t.maxOverdueDays} style={{ width: '100%' }} />
+            </Form.Item>
+          </div>
           <Form.Item
             name="settlementType"
             label={t.settlementType}

@@ -24,11 +24,11 @@ export function findMatchingRule(
     if (!rule.enabled) return false;
     if (!rule.products.includes(product)) return false;
     if (rule.settlementType !== settlementType) return false;
-    if (overdueDays < rule.overdueDays) return false;
+    if (overdueDays < rule.minOverdueDays || overdueDays > rule.maxOverdueDays) return false;
     return true;
   });
 
-  return filteredRules.sort((a, b) => b.overdueDays - a.overdueDays)[0];
+  return filteredRules.sort((a, b) => b.maxOverdueDays - a.maxOverdueDays)[0];
 }
 
 export function calculateMaxReduction(
@@ -85,12 +85,15 @@ export function allocateReduction(
   
   const principalRatio = totalCap > 0 ? maxBreakdown.principal / totalCap : 0;
   const interestRatio = totalCap > 0 ? maxBreakdown.interest / totalCap : 0;
-  const penaltyRatio = totalCap > 0 ? maxBreakdown.penalty / totalCap : 0;
+  
+  const allocatedPrincipal = actualReduction * principalRatio;
+  const allocatedInterest = actualReduction * interestRatio;
+  const allocatedPenalty = actualReduction - allocatedPrincipal - allocatedInterest;
   
   const allocatedBreakdown: SubjectReduction = {
-    principal: actualReduction * principalRatio,
-    interest: actualReduction * interestRatio,
-    penalty: actualReduction * penaltyRatio,
+    principal: allocatedPrincipal,
+    interest: allocatedInterest,
+    penalty: allocatedPenalty,
   };
 
   const subjectTotals = calculateSubjectTotals(bills);

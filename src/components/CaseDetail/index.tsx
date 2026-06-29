@@ -40,8 +40,8 @@ import {
   UpOutlined
 } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { ReductionRule, ReductionType } from '../../types';
-import { findMatchingRule, calculateMaxReduction, allocateReduction } from '../../utils/reductionCalc';
+import { ReductionRule, ReductionType, SettlementResult } from '../../types';
+import { findMatchingRule, calculateMaxReduction, allocateReduction, settlePayment } from '../../utils/reductionCalc';
 
 // 银行logo映射
 const bankLogos: Record<string, string> = {
@@ -108,7 +108,7 @@ interface Contact {
 }
 
 const formatIDR = (amount: number): string => {
-  return amount.toLocaleString('id-ID');
+  return Math.round(amount).toLocaleString('id-ID');
 };
 
 interface CaseDetailProps {
@@ -462,10 +462,10 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
 
   // 减免规则（模拟）
   const reductionRules: ReductionRule[] = [
-    { id: 'R1', name: '消费贷-结清-30天', products: ['消费贷'], overdueDays: 30, settlementType: 'settle', subjectCaps: { principal: 0, interest: 50, penalty: 100 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
-    { id: 'R2', name: '消费贷-结清-90天', products: ['消费贷'], overdueDays: 90, settlementType: 'settle', subjectCaps: { principal: 10, interest: 70, penalty: 100 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
-    { id: 'R3', name: '消费贷-非结清-30天', products: ['消费贷'], overdueDays: 30, settlementType: 'nonSettle', subjectCaps: { principal: 0, interest: 30, penalty: 50 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
-    { id: 'R4', name: '消费贷-非结清-90天', products: ['消费贷'], overdueDays: 90, settlementType: 'nonSettle', subjectCaps: { principal: 0, interest: 50, penalty: 70 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
+    { id: 'R1', name: '消费贷-结清-0-30天', products: ['消费贷'], minOverdueDays: 0, maxOverdueDays: 30, settlementType: 'settle', subjectCaps: { principal: 0, interest: 50, penalty: 100 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
+    { id: 'R2', name: '消费贷-结清-31-90天', products: ['消费贷'], minOverdueDays: 31, maxOverdueDays: 90, settlementType: 'settle', subjectCaps: { principal: 10, interest: 70, penalty: 100 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
+    { id: 'R3', name: '消费贷-非结清-0-30天', products: ['消费贷'], minOverdueDays: 0, maxOverdueDays: 30, settlementType: 'nonSettle', subjectCaps: { principal: 0, interest: 30, penalty: 50 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
+    { id: 'R4', name: '消费贷-非结清-31-90天', products: ['消费贷'], minOverdueDays: 31, maxOverdueDays: 90, settlementType: 'nonSettle', subjectCaps: { principal: 0, interest: 50, penalty: 70 }, enabled: true, createTime: '2024-03-01 10:00:00', createBy: 'admin', updateTime: '2024-03-01 10:00:00', updateBy: 'admin' },
   ];
 
   // 当前产品
@@ -482,6 +482,13 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
 
   // 减免申请理由
   const [reductionReason, setReductionReason] = useState<string>('');
+
+  // 指定金额还款
+  const [specifiedPaymentModalVisible, setSpecifiedPaymentModalVisible] = useState(false);
+  const [specifiedPaymentAmount, setSpecifiedPaymentAmount] = useState<number>(0);
+  const [specifiedPaymentReason, setSpecifiedPaymentReason] = useState<string>('');
+  const [specifiedPaymentTrialResult, setSpecifiedPaymentTrialResult] = useState<SettlementResult | null>(null);
+  const [specifiedPaymentConfirmVisible, setSpecifiedPaymentConfirmVisible] = useState(false);
 
   // 状态管理
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -556,7 +563,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       return allocateReduction(getSelectedBills, rule, requestedReduction);
     }
     return null;
-  }, [getSelectedBills, reductionType, requestedReduction]);
+  }, [getSelectedBills, reductionType, requestedReduction, reductionCalculation]);
 
   // 检查是否符合减免条件（必须有账单被选中）
   const canApplyReduction = useMemo(() => {
@@ -1556,16 +1563,30 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
           </div>
           <Space>
             {canApplyReduction && (
-              <Button 
-                type="primary" 
-                onClick={() => {
-                  setReductionType(isAllUnpaidSelected ? 'settle' : 'nonSettle');
-                  setReductionModalVisible(true);
-                }}
-                style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
-              >
-                Apply Reduction
-              </Button>
+              <>
+                <Button 
+                  type="primary" 
+                  onClick={() => {
+                    setReductionType(isAllUnpaidSelected ? 'settle' : 'nonSettle');
+                    setReductionModalVisible(true);
+                  }}
+                  style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
+                >
+                  Apply Reduction
+                </Button>
+                <Button 
+                  type="primary" 
+                  onClick={() => {
+                    setSpecifiedPaymentModalVisible(true);
+                    setSpecifiedPaymentAmount(0);
+                    setSpecifiedPaymentReason('');
+                    setSpecifiedPaymentTrialResult(null);
+                  }}
+                  style={{ backgroundColor: '#8b5cf6', borderColor: '#8b5cf6' }}
+                >
+                  Specified Payment
+                </Button>
+              </>
             )}
             <Button 
               type="primary" 
@@ -2258,13 +2279,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
               <span style={{ fontSize: '14px', fontWeight: '600', color: '#92400e' }}>Maximum Reduction Amount</span>
               <span style={{ fontSize: '20px', fontWeight: '700', color: '#f59e0b' }}>{formatIDR(reductionCalculation.maxReduction)} IDR</span>
             </div>
-            {(reductionType === 'settle' || reductionType === 'nonSettle') && reductionCalculation.breakdown && (
-              <div style={{ display: 'flex', gap: '16px', marginTop: '8px', fontSize: '12px', color: '#b45309' }}>
-                <span>Principal: {formatIDR(reductionCalculation.breakdown.principal)}</span>
-                <span>Interest: {formatIDR(reductionCalculation.breakdown.interest)}</span>
-                <span>Penalty: {formatIDR(reductionCalculation.breakdown.penalty)}</span>
-              </div>
-            )}
           </div>
 
           {/* Requested Reduction Amount */}
@@ -2282,8 +2296,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                   message.error(`超出最大可减免额度，最大可减免 ${formatIDR(reductionCalculation.maxReduction)} IDR`);
                 }
               }}
-              formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-              parser={(value) => parseFloat(value?.replace(/,/g, '') || '0')}
               style={{ width: '100%' }}
               placeholder={`Max: ${formatIDR(reductionCalculation.maxReduction)}`}
               disabled={reductionCalculation.maxReduction === 0}
@@ -2308,6 +2320,9 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                     <div style={{ fontSize: '12px', color: '#6b7280' }}>Penalty (罚息)</div>
                     <div style={{ fontSize: '16px', fontWeight: '600', color: '#f97316' }}>-{formatIDR(allocatedDetails.allocatedBreakdown.penalty)} IDR</div>
                   </div>
+                </div>
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e5e7eb', textAlign: 'right' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#22c55e' }}>Total: -{formatIDR(allocatedDetails.allocatedBreakdown.principal + allocatedDetails.allocatedBreakdown.interest + allocatedDetails.allocatedBreakdown.penalty)} IDR</span>
                 </div>
               </div>
             </div>
@@ -2338,6 +2353,166 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
               <strong>Notice:</strong> After submission, the application will be reviewed by the supervisor. Once approved, a payment code will be generated for the customer.
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* Specified Payment Modal */}
+      <Modal
+        title="Specified Payment (指定金额还款)"
+        open={specifiedPaymentModalVisible}
+        onCancel={() => setSpecifiedPaymentModalVisible(false)}
+        width={700}
+        footer={[
+          <Button key="cancel" onClick={() => setSpecifiedPaymentModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="trial"
+            type="default"
+            onClick={() => {
+              if (specifiedPaymentAmount <= 0) {
+                message.error('请输入有效的金额');
+                return;
+              }
+              if (!specifiedPaymentReason.trim()) {
+                message.error('请输入理由');
+                return;
+              }
+              const trialBillDetails = getSelectedBills.map(bill => ({
+                billNumber: bill.billNumber,
+                installments: bill.installments,
+                originalAmount: bill.amount,
+                principal: bill.principal || 0,
+                interest: bill.interest || 0,
+                penalty: bill.penalty || 0,
+                reductionAmount: 0,
+                reductionBreakdown: { principal: 0, interest: 0, penalty: 0 },
+                finalAmount: bill.amount,
+              }));
+              const result = settlePayment(trialBillDetails, specifiedPaymentAmount);
+              setSpecifiedPaymentTrialResult(result);
+            }}
+          >
+            Trial (试算)
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            disabled={!specifiedPaymentTrialResult}
+            onClick={() => setSpecifiedPaymentConfirmVisible(true)}
+            style={{ backgroundColor: '#8b5cf6', borderColor: '#8b5cf6' }}
+          >
+            Submit
+          </Button>,
+        ]}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Selected Bills */}
+          <div style={{ backgroundColor: '#f9fafb', borderRadius: '8px', padding: '12px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Selected Bills (选中的账单)</div>
+            {selectedBills.length > 0 ? (
+              <div>
+                {selectedBills.map(billId => {
+                  const bill = bills.find(b => b.id === billId);
+                  return bill ? (
+                    <div key={bill.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '13px', color: '#1f2937' }}>{bill.billNumber} ({bill.installments})</span>
+                      <span style={{ fontSize: '13px', fontWeight: '500', color: '#0d4f3c' }}>{formatIDR(bill.amount)} IDR</span>
+                    </div>
+                  ) : null;
+                })}
+                <Divider style={{ margin: '8px 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#1f2937' }}>
+                  <span>Total Amount (总金额)</span>
+                  <span style={{ color: '#0d4f3c' }}>{formatIDR(selectedBillsTotal)} IDR</span>
+                </div>
+              </div>
+            ) : (
+              <p style={{ color: '#9ca3af', textAlign: 'center', margin: 0 }}>No bills selected</p>
+            )}
+          </div>
+
+          {/* Specified Amount */}
+          <div>
+            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>
+              Payment Amount <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <InputNumber
+              min={0}
+              max={selectedTotal}
+              value={specifiedPaymentAmount}
+              onChange={(newVal) => setSpecifiedPaymentAmount(newVal || 0)}
+              style={{ width: '100%' }}
+              placeholder={`Max: ${formatIDR(selectedTotal)}`}
+            />
+          </div>
+
+          {/* Reason */}
+          <div>
+            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>
+              Reason <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <textarea
+              placeholder="Enter reason for specified payment..."
+              style={{ width: '100%', height: '80px', borderRadius: '8px', padding: '12px', border: '1px solid #d1d5db', fontSize: '13px' }}
+              value={specifiedPaymentReason}
+              onChange={(e) => setSpecifiedPaymentReason(e.target.value)}
+            />
+          </div>
+
+          {/* Trial Result */}
+          {specifiedPaymentTrialResult && (
+            <div style={{ backgroundColor: '#f0fdf4', borderRadius: '8px', padding: '12px', border: '1px solid #bbf7d0' }}>
+              <div style={{ fontSize: '13px', fontWeight: '500', color: '#065f46', marginBottom: '8px' }}>
+                Trial Result (试算结果)
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#0d4f3c' }}>
+                <span>Payment Amount (还款金额):</span>
+                <span style={{ fontWeight: '600' }}>{formatIDR(specifiedPaymentTrialResult.totalPaid)} IDR</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#dc2626' }}>
+                <span>Remaining (剩余):</span>
+                <span style={{ fontWeight: '600' }}>{formatIDR(specifiedPaymentTrialResult.remainingAmount)} IDR</span>
+              </div>
+              <div style={{ marginTop: '8px' }}>
+                <div style={{ fontSize: '12px', color: '#065f46', marginBottom: '4px' }}>
+                  Settled Bills (已平账): {specifiedPaymentTrialResult.settledBills.length}
+                </div>
+                {specifiedPaymentTrialResult.settledBills.slice(0, 3).map((bill, index) => (
+                  <div key={index} style={{ fontSize: '12px', color: '#0d4f3c' }}>
+                    {bill.billNumber} - {formatIDR(bill.finalAmount)} IDR
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Specified Payment Confirm Modal */}
+      <Modal
+        title="Confirm Specified Payment"
+        open={specifiedPaymentConfirmVisible}
+        onOk={() => {
+          message.success(`指定金额还款申请提交成功！申请编号: SP-${Date.now()}`);
+          setSpecifiedPaymentConfirmVisible(false);
+          setSpecifiedPaymentModalVisible(false);
+          setSpecifiedPaymentAmount(0);
+          setSpecifiedPaymentReason('');
+          setSpecifiedPaymentTrialResult(null);
+        }}
+        onCancel={() => setSpecifiedPaymentConfirmVisible(false)}
+        okText="Confirm"
+        cancelText="Cancel"
+      >
+        <div style={{ padding: '12px', backgroundColor: '#f0fdf4', borderRadius: '8px', marginBottom: '16px' }}>
+          <p style={{ fontSize: '14px', color: '#065f46', margin: 0 }}>
+            Please confirm to submit the specified payment application. After approval, a payment code of <strong>{formatIDR(specifiedPaymentAmount)} IDR</strong> will be generated.
+          </p>
+        </div>
+        <div style={{ fontSize: '13px', color: '#374151' }}>
+          <p><strong>Payment Amount:</strong> {formatIDR(specifiedPaymentAmount)} IDR</p>
+          <p><strong>Reason:</strong> {specifiedPaymentReason}</p>
         </div>
       </Modal>
 

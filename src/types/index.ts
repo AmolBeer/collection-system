@@ -48,7 +48,8 @@ export interface ReductionRule {
   id: string;
   name: string;
   products: string[];
-  overdueDays: number;
+  minOverdueDays: number;
+  maxOverdueDays: number;
   settlementType: SettlementType;
   subjectCaps: SubjectReduction;
   enabled: boolean;
