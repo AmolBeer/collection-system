@@ -1647,6 +1647,9 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                           onClick={(e) => e.stopPropagation()}
                         />
                         <span style={{ fontWeight: '600', color: '#0d4f3c' }}>Order: {orderId}</span>
+                        {(orderId === 'ORD001') && (
+                          <Tag color="orange">展期中</Tag>
+                        )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <span style={{ fontSize: '13px', color: '#6b7280' }}>
