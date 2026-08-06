@@ -493,6 +493,8 @@ export interface Translations {
   chinese: string;
   english: string;
   indonesian: string;
+  // 案件详情
+  lastAppLoginTime: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -965,6 +967,7 @@ export const translations: Record<Language, Translations> = {
     paidPenalty: '已还罚息',
     paid: '已结清',
     unpaid: '未结清',
+    lastAppLoginTime: '最近登录APP时间',
   },
   en: {
     // 工单审核相关
@@ -1435,6 +1438,7 @@ export const translations: Record<Language, Translations> = {
     paidPenalty: 'Paid Penalty',
     paid: 'Paid',
     unpaid: 'Unpaid',
+    lastAppLoginTime: 'Last App Login Time',
   },
   id: {
     // 工单审核相关
@@ -1905,5 +1909,6 @@ export const translations: Record<Language, Translations> = {
     paidPenalty: 'Denda Dibayar',
     paid: 'Dibayar',
     unpaid: 'Belum Dibayar',
+    lastAppLoginTime: 'Waktu Terakhir Login Aplikasi',
   },
 };

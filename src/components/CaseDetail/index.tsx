@@ -1470,7 +1470,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                     </Space>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ fontWeight: '500', color: '#1f2937' }}>最近登录APP时间:</span>
+                    <span style={{ fontWeight: '500', color: '#1f2937' }}>{t.lastAppLoginTime}:</span>
                     <span style={{ color: '#6b7280' }}>{personalInfo.lastAppLoginTime}</span>
                   </div>
                 </div>
