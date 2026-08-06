@@ -125,6 +125,7 @@ interface PersonalInfo {
   education: string;
   mothersName: string;
   noOfDependants: number;
+  lastAppLoginTime: string;
 }
 
 interface ResidenceInfo {
@@ -196,6 +197,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     education: 'Senior High School',
     mothersName: 'SRI WAHYUNI',
     noOfDependants: 0,
+    lastAppLoginTime: '2026-08-06 14:32:18',
   };
 
   const residenceInfo: ResidenceInfo = {
@@ -1466,6 +1468,10 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                     <MessageOutlined style={{ color: '#fff', fontSize: '12px' }} />
                   </Button>
                     </Space>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontWeight: '500', color: '#1f2937' }}>最近登录APP时间:</span>
+                    <span style={{ color: '#6b7280' }}>{personalInfo.lastAppLoginTime}</span>
                   </div>
                 </div>
                 <Button 
