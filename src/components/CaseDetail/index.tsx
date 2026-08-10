@@ -75,6 +75,8 @@ interface Bill {
   serviceFee?: number;
   interest?: number;
   principal?: number;
+  extensionCount?: number;
+  canExtend?: boolean;
 }
 
 interface VAInfo {
@@ -324,7 +326,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
   // 账单数据 - 模拟2笔6期的订单（测试数据：多期未还款，便于测试期次多选和金额调整）
   const bills: Bill[] = [
     // 订单1: ORD001 (6期) - 前2期已还，后4期逾期/未还
-    { id: 'B001', orderId: 'ORD001', billNumber: 'INV-2024-0115', installments: 'Installment 1', dueDate: '15 Jan 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B001', orderId: 'ORD001', billNumber: 'INV-2024-0115', installments: 'Installment 1', dueDate: '15 Jan 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000, extensionCount: 3, canExtend: true },
     { id: 'B002', orderId: 'ORD001', billNumber: 'INV-2024-0215', installments: 'Installment 2', dueDate: '15 Feb 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
     { id: 'B003', orderId: 'ORD001', billNumber: 'INV-2024-0315', installments: 'Installment 3', dueDate: '15 Mar 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
     { id: 'B004', orderId: 'ORD001', billNumber: 'INV-2024-0415', installments: 'Installment 4', dueDate: '15 Apr 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
@@ -332,7 +334,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     { id: 'B006', orderId: 'ORD001', billNumber: 'INV-2024-0615', installments: 'Installment 6', dueDate: '15 Jun 2024', amount: 2800000, paidAmount: 0, status: 'unpaid', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
     
     // 订单2: ORD002 (6期) - 全部未还，便于测试多选
-    { id: 'B007', orderId: 'ORD002', billNumber: 'INV-2024-0701', installments: 'Installment 1', dueDate: '01 Jul 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
+    { id: 'B007', orderId: 'ORD002', billNumber: 'INV-2024-0701', installments: 'Installment 1', dueDate: '01 Jul 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000, extensionCount: 0, canExtend: true },
     { id: 'B008', orderId: 'ORD002', billNumber: 'INV-2024-0801', installments: 'Installment 2', dueDate: '01 Aug 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
     { id: 'B009', orderId: 'ORD002', billNumber: 'INV-2024-0901', installments: 'Installment 3', dueDate: '01 Sep 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
     { id: 'B010', orderId: 'ORD002', billNumber: 'INV-2024-1001', installments: 'Installment 4', dueDate: '01 Oct 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
@@ -1653,9 +1655,18 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                           onClick={(e) => e.stopPropagation()}
                         />
                         <span style={{ fontWeight: '600', color: '#0d4f3c' }}>Order: {orderId}</span>
-                        {(orderId === 'ORD001') && (
-                          <Tag color="orange">展期中</Tag>
-                        )}
+                        {(() => {
+                          const orderExtension = orderBills.find(b => b.extensionCount !== undefined || b.canExtend !== undefined);
+                          if (!orderExtension) return null;
+                          const tags = [];
+                          if ((orderExtension.extensionCount ?? 0) > 0) {
+                            tags.push(<Tag key="extended" color="orange">{t.extendedNTimes.replace('{count}', String(orderExtension.extensionCount))}</Tag>);
+                          }
+                          if (orderExtension.canExtend) {
+                            tags.push(<Tag key="canExtend" color="blue">{t.canExtend}</Tag>);
+                          }
+                          return tags.length > 0 ? <>{tags}</> : null;
+                        })()}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <span style={{ fontSize: '13px', color: '#6b7280' }}>

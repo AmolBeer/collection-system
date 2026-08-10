@@ -495,6 +495,9 @@ export interface Translations {
   indonesian: string;
   // 案件详情
   lastAppLoginTime: string;
+  extensionCount: string;
+  canExtend: string;
+  extendedNTimes: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -968,6 +971,9 @@ export const translations: Record<Language, Translations> = {
     paid: '已结清',
     unpaid: '未结清',
     lastAppLoginTime: '最近登录APP时间',
+    extensionCount: '展期次数',
+    canExtend: '可以展期',
+    extendedNTimes: '已展期 {count} 次',
   },
   en: {
     // 工单审核相关
@@ -1439,6 +1445,9 @@ export const translations: Record<Language, Translations> = {
     paid: 'Paid',
     unpaid: 'Unpaid',
     lastAppLoginTime: 'Last App Login Time',
+    extensionCount: 'Extension Count',
+    canExtend: 'Can Extend',
+    extendedNTimes: 'Extended {count} times',
   },
   id: {
     // 工单审核相关
@@ -1910,5 +1919,8 @@ export const translations: Record<Language, Translations> = {
     paid: 'Dibayar',
     unpaid: 'Belum Dibayar',
     lastAppLoginTime: 'Waktu Terakhir Login Aplikasi',
+    extensionCount: 'Jumlah Perpanjangan',
+    canExtend: 'Dapat Perpanjang',
+    extendedNTimes: 'Sudah diperpanjang {count} kali',
   },
 };
