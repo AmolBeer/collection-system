@@ -931,7 +931,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     },
     {
       key: 'repayment',
-      label: t.repaymentHistory,
+      label: t.paymentRecord,
       children: (
         <Table
           dataSource={paymentHistory}
