@@ -325,7 +325,7 @@ export interface Translations {
   pleaseSelectBillStatus: string;
   isOverdue: string;
   // CaseDetail组件
-  paymentRecord: string;
+  paymentHistory: string;
   paymentDate: string;
   billNumber: string;
   installments: string;
@@ -809,7 +809,7 @@ export const translations: Record<Language, Translations> = {
     carLoan: '车贷',
     pleaseSelectBillStatus: '请选择账单状态',
     isOverdue: '逾期',
-    paymentRecord: '流水记录',
+    paymentHistory: '流水记录',
     paymentDate: '还款日期',
     billNumber: '账单号',
     installments: '期数',
@@ -1290,7 +1290,7 @@ export const translations: Record<Language, Translations> = {
     carLoan: 'Car Loan',
     pleaseSelectBillStatus: 'Please select bill status',
     isOverdue: 'Overdue',
-    paymentRecord: 'Payment Record',
+    paymentHistory: 'Payment History',
     paymentDate: 'Payment Date',
     billNumber: 'Bill Number',
     installments: 'Installments',
@@ -1771,7 +1771,7 @@ export const translations: Record<Language, Translations> = {
     carLoan: 'Pinjaman Mobil',
     pleaseSelectBillStatus: 'Silakan pilih status tagihan',
     isOverdue: 'Terlambat',
-    paymentRecord: 'Catatan Transaksi',
+    paymentHistory: 'Riwayat Transaksi',
     paymentDate: 'Tanggal Pembayaran',
     billNumber: 'Nomor Tagihan',
     installments: 'Angsuran',
