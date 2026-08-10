@@ -974,8 +974,8 @@ export const translations: Record<Language, Translations> = {
     lastAppLoginTime: '最近登录APP时间',
     canExtend: '可展期',
     extending: '展期中',
-    pendingExtension: '展期申请中',
-    extendedNTimes: '已展期 {count} 次',
+    pendingExtension: '申请中',
+    extendedNTimes: '×{count}',
   },
   en: {
     // 工单审核相关
@@ -1447,10 +1447,10 @@ export const translations: Record<Language, Translations> = {
     paid: 'Paid',
     unpaid: 'Unpaid',
     lastAppLoginTime: 'Last App Login Time',
-    canExtend: 'Can Extend',
+    canExtend: 'Extendable',
     extending: 'Extending',
-    pendingExtension: 'Extension Pending',
-    extendedNTimes: 'Extended {count} times',
+    pendingExtension: 'Pending',
+    extendedNTimes: '×{count}',
   },
   id: {
     // 工单审核相关
@@ -1922,9 +1922,9 @@ export const translations: Record<Language, Translations> = {
     paid: 'Dibayar',
     unpaid: 'Belum Dibayar',
     lastAppLoginTime: 'Waktu Terakhir Login Aplikasi',
-    canExtend: 'Dapat Perpanjang',
-    extending: 'Sedang Perpanjang',
-    pendingExtension: 'Permohonan Perpanjangan',
-    extendedNTimes: 'Sudah diperpanjang {count} kali',
+    canExtend: 'Bisa',
+    extending: 'Aktif',
+    pendingExtension: 'Pengajuan',
+    extendedNTimes: '×{count}',
   },
 };

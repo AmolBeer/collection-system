@@ -1686,7 +1686,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                           if (!statusInfo) return null;
                           const count = orderExt.extensionCount ?? 0;
                           const displayText = count > 0
-                            ? `${statusInfo.label} · ${t.extendedNTimes.replace('{count}', String(count))}`
+                            ? `${statusInfo.label} ${t.extendedNTimes.replace('{count}', String(count))}`
                             : statusInfo.label;
                           return <Tag color={statusInfo.color}>{displayText}</Tag>;
                         })()}
