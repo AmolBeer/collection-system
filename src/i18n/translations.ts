@@ -498,7 +498,7 @@ export interface Translations {
   canExtend: string;
   extending: string;
   pendingExtension: string;
-  extendedNTimes: string;
+  extensionCountLabel: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -975,7 +975,7 @@ export const translations: Record<Language, Translations> = {
     canExtend: '可展期',
     extending: '展期中',
     pendingExtension: '申请中',
-    extendedNTimes: '×{count}',
+    extensionCountLabel: '已展期',
   },
   en: {
     // 工单审核相关
@@ -1450,7 +1450,7 @@ export const translations: Record<Language, Translations> = {
     canExtend: 'Extendable',
     extending: 'Extending',
     pendingExtension: 'Pending',
-    extendedNTimes: '×{count}',
+    extensionCountLabel: 'Extended',
   },
   id: {
     // 工单审核相关
@@ -1925,6 +1925,6 @@ export const translations: Record<Language, Translations> = {
     canExtend: 'Bisa',
     extending: 'Aktif',
     pendingExtension: 'Pengajuan',
-    extendedNTimes: '×{count}',
+    extensionCountLabel: 'Diperpanjang',
   },
 };

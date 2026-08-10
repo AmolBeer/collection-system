@@ -1685,10 +1685,16 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                           const statusInfo = statusMap[orderExt.extensionStatus!];
                           if (!statusInfo) return null;
                           const count = orderExt.extensionCount ?? 0;
-                          const displayText = count > 0
-                            ? `${statusInfo.label} ${t.extendedNTimes.replace('{count}', String(count))}`
-                            : statusInfo.label;
-                          return <Tag color={statusInfo.color}>{displayText}</Tag>;
+                          return (
+                            <>
+                              <Tag color={statusInfo.color}>{statusInfo.label}</Tag>
+                              {count > 0 && (
+                                <Tag style={{ backgroundColor: '#f0f5ff', color: '#1d39c4', border: '1px solid #adc6ff' }}>
+                                  {t.extensionCountLabel} {count}
+                                </Tag>
+                              )}
+                            </>
+                          );
                         })()}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
