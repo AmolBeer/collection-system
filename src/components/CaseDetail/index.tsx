@@ -76,7 +76,7 @@ interface Bill {
   interest?: number;
   principal?: number;
   extensionCount?: number;
-  canExtend?: boolean;
+  extensionStatus?: 'can_extend' | 'pending' | 'extending';
 }
 
 interface VAInfo {
@@ -325,21 +325,27 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
 
   // 账单数据 - 模拟2笔6期的订单（测试数据：多期未还款，便于测试期次多选和金额调整）
   const bills: Bill[] = [
-    // 订单1: ORD001 (6期) - 前2期已还，后4期逾期/未还
-    { id: 'B001', orderId: 'ORD001', billNumber: 'INV-2024-0115', installments: 'Installment 1', dueDate: '15 Jan 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000, extensionCount: 3, canExtend: true },
+    // 订单1: ORD001 (6期) - 前2期已还，后4期逾期/未还 - 展期中
+    { id: 'B001', orderId: 'ORD001', billNumber: 'INV-2024-0115', installments: 'Installment 1', dueDate: '15 Jan 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000, extensionCount: 3, extensionStatus: 'extending' },
     { id: 'B002', orderId: 'ORD001', billNumber: 'INV-2024-0215', installments: 'Installment 2', dueDate: '15 Feb 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
     { id: 'B003', orderId: 'ORD001', billNumber: 'INV-2024-0315', installments: 'Installment 3', dueDate: '15 Mar 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
     { id: 'B004', orderId: 'ORD001', billNumber: 'INV-2024-0415', installments: 'Installment 4', dueDate: '15 Apr 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
     { id: 'B005', orderId: 'ORD001', billNumber: 'INV-2024-0515', installments: 'Installment 5', dueDate: '15 May 2024', amount: 2800000, paidAmount: 0, status: 'overdue', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
     { id: 'B006', orderId: 'ORD001', billNumber: 'INV-2024-0615', installments: 'Installment 6', dueDate: '15 Jun 2024', amount: 2800000, paidAmount: 0, status: 'unpaid', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
     
-    // 订单2: ORD002 (6期) - 全部未还，便于测试多选
-    { id: 'B007', orderId: 'ORD002', billNumber: 'INV-2024-0701', installments: 'Installment 1', dueDate: '01 Jul 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000, extensionCount: 0, canExtend: true },
+    // 订单2: ORD002 (6期) - 全部未还 - 展期申请中
+    { id: 'B007', orderId: 'ORD002', billNumber: 'INV-2024-0701', installments: 'Installment 1', dueDate: '01 Jul 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000, extensionCount: 2, extensionStatus: 'pending' },
     { id: 'B008', orderId: 'ORD002', billNumber: 'INV-2024-0801', installments: 'Installment 2', dueDate: '01 Aug 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
     { id: 'B009', orderId: 'ORD002', billNumber: 'INV-2024-0901', installments: 'Installment 3', dueDate: '01 Sep 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
     { id: 'B010', orderId: 'ORD002', billNumber: 'INV-2024-1001', installments: 'Installment 4', dueDate: '01 Oct 2024', amount: 3000000, paidAmount: 0, status: 'unpaid', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000 },
     { id: 'B011', orderId: 'ORD002', billNumber: 'INV-2024-1101', installments: 'Installment 5', dueDate: '01 Nov 2024', amount: 3200000, paidAmount: 0, status: 'unpaid', principal: 2500000, interest: 400000, serviceFee: 200000, penalty: 100000 },
     { id: 'B012', orderId: 'ORD002', billNumber: 'INV-2024-1201', installments: 'Installment 6', dueDate: '01 Dec 2024', amount: 3200000, paidAmount: 0, status: 'unpaid', principal: 2500000, interest: 400000, serviceFee: 200000, penalty: 100000 },
+    
+    // 订单3: ORD003 (4期) - 可展期
+    { id: 'B013', orderId: 'ORD003', billNumber: 'INV-2024-0815', installments: 'Installment 1', dueDate: '15 Aug 2024', amount: 2000000, paidAmount: 0, status: 'overdue', principal: 1600000, interest: 240000, serviceFee: 120000, penalty: 40000, extensionCount: 0, extensionStatus: 'can_extend' },
+    { id: 'B014', orderId: 'ORD003', billNumber: 'INV-2024-0915', installments: 'Installment 2', dueDate: '15 Sep 2024', amount: 2000000, paidAmount: 0, status: 'unpaid', principal: 1600000, interest: 240000, serviceFee: 120000, penalty: 40000 },
+    { id: 'B015', orderId: 'ORD003', billNumber: 'INV-2024-1015', installments: 'Installment 3', dueDate: '15 Oct 2024', amount: 2000000, paidAmount: 0, status: 'unpaid', principal: 1600000, interest: 240000, serviceFee: 120000, penalty: 40000 },
+    { id: 'B016', orderId: 'ORD003', billNumber: 'INV-2024-1115', installments: 'Installment 4', dueDate: '15 Nov 2024', amount: 2000000, paidAmount: 0, status: 'unpaid', principal: 1600000, interest: 240000, serviceFee: 120000, penalty: 40000 },
   ];
 
   // VA码数据
@@ -1656,16 +1662,20 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                         />
                         <span style={{ fontWeight: '600', color: '#0d4f3c' }}>Order: {orderId}</span>
                         {(() => {
-                          const orderExtension = orderBills.find(b => b.extensionCount !== undefined || b.canExtend !== undefined);
-                          if (!orderExtension) return null;
-                          const tags = [];
-                          if ((orderExtension.extensionCount ?? 0) > 0) {
-                            tags.push(<Tag key="extended" color="orange">{t.extendedNTimes.replace('{count}', String(orderExtension.extensionCount))}</Tag>);
-                          }
-                          if (orderExtension.canExtend) {
-                            tags.push(<Tag key="canExtend" color="blue">{t.canExtend}</Tag>);
-                          }
-                          return tags.length > 0 ? <>{tags}</> : null;
+                          const orderExt = orderBills.find(b => b.extensionStatus !== undefined);
+                          if (!orderExt) return null;
+                          const statusMap: Record<string, { color: string; label: string }> = {
+                            can_extend: { color: 'blue', label: t.canExtend },
+                            pending: { color: 'gold', label: t.pendingExtension },
+                            extending: { color: 'orange', label: t.extending },
+                          };
+                          const statusInfo = statusMap[orderExt.extensionStatus!];
+                          if (!statusInfo) return null;
+                          const count = orderExt.extensionCount ?? 0;
+                          const displayText = count > 0
+                            ? `${statusInfo.label} · ${t.extendedNTimes.replace('{count}', String(count))}`
+                            : statusInfo.label;
+                          return <Tag color={statusInfo.color}>{displayText}</Tag>;
                         })()}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
