@@ -334,6 +334,12 @@ export interface Translations {
   paymentMethod: string;
   paymentCode: string;
   transactionNo: string;
+  transactionType: string;
+  typePayment: string;
+  typeDisbursement: string;
+  typeExtensionFee: string;
+  typePenalty: string;
+  typeServiceFee: string;
   collectionRecords: string;
   method: string;
   result: string;
@@ -812,6 +818,12 @@ export const translations: Record<Language, Translations> = {
     paymentMethod: '还款方式',
     paymentCode: '还款码',
     transactionNo: '交易号',
+    transactionType: '类型',
+    typePayment: '还款',
+    typeDisbursement: '放款',
+    typeExtensionFee: '展期手续费',
+    typePenalty: '罚息',
+    typeServiceFee: '服务费',
     collectionRecords: '催收记录',
     method: '方式',
     result: '结果',
@@ -1287,6 +1299,12 @@ export const translations: Record<Language, Translations> = {
     paymentMethod: 'Payment Method',
     paymentCode: 'Payment Code',
     transactionNo: 'Transaction No',
+    transactionType: 'Type',
+    typePayment: 'Payment',
+    typeDisbursement: 'Disbursement',
+    typeExtensionFee: 'Extension Fee',
+    typePenalty: 'Penalty',
+    typeServiceFee: 'Service Fee',
     collectionRecords: 'Collection Records',
     method: 'Method',
     result: 'Result',
@@ -1762,6 +1780,12 @@ export const translations: Record<Language, Translations> = {
     paymentMethod: 'Metode Pembayaran',
     paymentCode: 'Kode Pembayaran',
     transactionNo: 'Nomor Transaksi',
+    transactionType: 'Tipe',
+    typePayment: 'Pembayaran',
+    typeDisbursement: 'Pencairan',
+    typeExtensionFee: 'Biaya Perpanjangan',
+    typePenalty: 'Denda',
+    typeServiceFee: 'Biaya Layanan',
     collectionRecords: 'Catatan Koleksi',
     method: 'Metode',
     result: 'Hasil',

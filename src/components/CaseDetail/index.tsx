@@ -270,10 +270,16 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
   ];
 
   const paymentHistory = [
-    { key: '1', date: '15 Apr 2024', billNumber: 'INV-2024-0415', installments: 'Month 4', amount: 2000000, channel: 'BCA Virtual Account', method: 'VA', paymentCode: '1234567890', transactionNo: 'TXN-20240415-0001' },
-    { key: '2', date: '15 Mar 2024', billNumber: 'INV-2024-0215, INV-2024-0315', installments: 'Month 2-3', amount: 4000000, channel: 'Mandiri Virtual Account', method: 'VA', paymentCode: '0987654321', transactionNo: 'TXN-20240315-0002' },
-    { key: '3', date: '15 Feb 2024', billNumber: 'INV-2024-0215', installments: 'Month 2', amount: 2000000, channel: 'Alfamart', method: 'Alfamart', paymentCode: 'AFM-20240215', transactionNo: 'TXN-20240215-0003' },
-    { key: '4', date: '15 Jan 2024', billNumber: 'INV-2024-0115', installments: 'Month 1', amount: 2000000, channel: 'BCA Virtual Account', method: 'VA', paymentCode: '1122334455', transactionNo: 'TXN-20240115-0004' },
+    { key: '1', date: '15 Apr 2024', billNumber: 'INV-2024-0415', installments: 'Month 4', amount: 2000000, channel: 'BCA Virtual Account', method: 'VA', paymentCode: '1234567890', transactionNo: 'TXN-20240415-0001', type: 'payment' },
+    { key: '2', date: '15 Mar 2024', billNumber: 'INV-2024-0215, INV-2024-0315', installments: 'Month 2-3', amount: 4000000, channel: 'Mandiri Virtual Account', method: 'VA', paymentCode: '0987654321', transactionNo: 'TXN-20240315-0002', type: 'payment' },
+    { key: '3', date: '15 Feb 2024', billNumber: 'INV-2024-0215', installments: 'Month 2', amount: 2000000, channel: 'Alfamart', method: 'Alfamart', paymentCode: 'AFM-20240215', transactionNo: 'TXN-20240215-0003', type: 'payment' },
+    { key: '4', date: '15 Jan 2024', billNumber: 'INV-2024-0115', installments: 'Month 1', amount: 2000000, channel: 'BCA Virtual Account', method: 'VA', paymentCode: '1122334455', transactionNo: 'TXN-20240115-0004', type: 'payment' },
+    { key: '5', date: '12 Jan 2024', billNumber: '-', installments: '-', amount: 25000000, channel: 'Internal Transfer', method: 'Transfer', paymentCode: '-', transactionNo: 'DIS-20240112-0001', type: 'disbursement' },
+    { key: '6', date: '20 Mar 2024', billNumber: 'EXT-ORD001-001', installments: '-', amount: 500000, channel: 'BCA Virtual Account', method: 'VA', paymentCode: '9988776655', transactionNo: 'EXT-20240320-0001', type: 'extension_fee' },
+    { key: '7', date: '10 Apr 2024', billNumber: 'EXT-ORD002-001', installments: '-', amount: 350000, channel: 'Mandiri Virtual Account', method: 'VA', paymentCode: '5566778899', transactionNo: 'EXT-20240410-0002', type: 'extension_fee' },
+    { key: '8', date: '25 Mar 2024', billNumber: 'PEN-ORD001-001', installments: '-', amount: 75000, channel: 'BCA Virtual Account', method: 'VA', paymentCode: '3344556677', transactionNo: 'PEN-20240325-0001', type: 'penalty' },
+    { key: '9', date: '05 Apr 2024', billNumber: 'SVC-ORD003-001', installments: '-', amount: 150000, channel: 'Internal Deduction', method: 'Deduction', paymentCode: '-', transactionNo: 'SVC-20240405-0001', type: 'service_fee' },
+    { key: '10', date: '18 Apr 2024', billNumber: 'INV-2024-0415', installments: 'Month 4', amount: 280000, channel: 'BCA Virtual Account', method: 'VA', paymentCode: '1234567890', transactionNo: 'PEN-20240418-0002', type: 'penalty' },
   ];
 
   // 案件流转记录数据
@@ -931,6 +937,23 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
           dataSource={paymentHistory}
           columns={[
             { title: t.paymentDate, dataIndex: 'date', key: 'date', width: '120px' },
+            { 
+              title: t.transactionType, 
+              dataIndex: 'type', 
+              key: 'type', 
+              width: '120px',
+              render: (type: string) => {
+                const typeMap: Record<string, { color: string; labelKey: string }> = {
+                  payment: { color: 'green', labelKey: t.typePayment },
+                  disbursement: { color: 'blue', labelKey: t.typeDisbursement },
+                  extension_fee: { color: 'purple', labelKey: t.typeExtensionFee },
+                  penalty: { color: 'red', labelKey: t.typePenalty },
+                  service_fee: { color: 'cyan', labelKey: t.typeServiceFee },
+                };
+                const info = typeMap[type] || { color: 'default', labelKey: type };
+                return <Tag color={info.color}>{info.labelKey}</Tag>;
+              }
+            },
             { title: t.billNumber, dataIndex: 'billNumber', key: 'billNumber', width: '150px' },
             { title: t.installments, dataIndex: 'installments', key: 'installments', width: '120px' },
             { 
@@ -938,7 +961,14 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
               dataIndex: 'amount', 
               key: 'amount', 
               width: '150px',
-              render: (amount: number) => <span style={{ fontWeight: '500', color: '#0d4f3c' }}>{formatIDR(amount)} IDR</span>
+              render: (amount: number, record: any) => {
+                const isOutgoing = record.type === 'disbursement';
+                return (
+                  <span style={{ fontWeight: '500', color: isOutgoing ? '#1d39c4' : '#0d4f3c' }}>
+                    {isOutgoing ? '-' : ''}{formatIDR(amount)} IDR
+                  </span>
+                );
+              }
             },
             { title: t.paymentChannel, dataIndex: 'channel', key: 'channel', width: '150px' },
             { 
@@ -946,7 +976,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
               dataIndex: 'method', 
               key: 'method', 
               width: '120px',
-              render: (method: string) => <Tag color={method === 'VA' ? 'blue' : 'orange'}>{method}</Tag>
+              render: (method: string) => <Tag color={method === 'VA' ? 'blue' : method === 'Transfer' ? 'geekblue' : method === 'Deduction' ? 'default' : 'orange'}>{method}</Tag>
             },
             { title: t.paymentCode, dataIndex: 'paymentCode', key: 'paymentCode', width: '150px' },
             { 
@@ -959,7 +989,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
           ]}
           pagination={false}
           size="middle"
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1400 }}
         />
       ),
     },
