@@ -182,6 +182,9 @@ export interface Translations {
   dueDate: string;
   daysPastDue: string;
   caseStatus: string;
+  caseUnassigned: string;
+  caseAssignedNotFollowed: string;
+  caseFollowing: string;
   lastPaymentDate: string;
   na: string;
   nextAction: string;
@@ -675,6 +678,9 @@ export const translations: Record<Language, Translations> = {
     dueDate: '到期日期',
     daysPastDue: '逾期天数',
     caseStatus: '案件状态',
+    caseUnassigned: '未分配',
+    caseAssignedNotFollowed: '已分配未跟进',
+    caseFollowing: '跟进中',
     lastPaymentDate: '最后还款日期',
     na: '无',
     nextAction: '下一步行动',
@@ -1156,6 +1162,9 @@ export const translations: Record<Language, Translations> = {
     dueDate: 'Due Date',
     daysPastDue: 'Days Past Due',
     caseStatus: 'Case Status',
+    caseUnassigned: 'Unassigned',
+    caseAssignedNotFollowed: 'Assigned (Not Followed)',
+    caseFollowing: 'Following',
     lastPaymentDate: 'Last Payment Date',
     na: 'N/A',
     nextAction: 'Next Action',
@@ -1637,6 +1646,9 @@ export const translations: Record<Language, Translations> = {
     dueDate: 'Tanggal Jatuh Tempo',
     daysPastDue: 'Hari Terlambat',
     caseStatus: 'Status Kasus',
+    caseUnassigned: 'Belum Dialokasikan',
+    caseAssignedNotFollowed: 'Dialokasikan (Belum Ditindaklanjuti)',
+    caseFollowing: 'Sedang Menindaklanjuti',
     lastPaymentDate: 'Tanggal Pembayaran Terakhir',
     na: 'Tidak Ada',
     nextAction: 'Aksi Berikutnya',
