@@ -4,6 +4,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
+export type ExitType = 'settlement' | 'extension';
+
 export interface SuspendedCase {
   id: string;
   caseId: string;
@@ -14,34 +16,61 @@ export interface SuspendedCase {
   endTime: string;
   forbiddenFeatures: string[];
   createTime: string;
+  exitType: ExitType;
 }
 
 const defaultSuspendedCases: SuspendedCase[] = [
   { 
     id: 'SUSP-001', 
-    caseId: 'CASE-003', 
-    borrowerName: '王五', 
-    phone: '13800138003',
+    caseId: 'KREDITOK008946', 
+    borrowerName: 'EZI SADRAKH SAPUTRA', 
+    phone: '0821 6273 6949',
     reason: '投诉', 
     operator: '管理员', 
     endTime: '2024-04-15 23:59:59', 
     forbiddenFeatures: ['禁止分案', '禁止发送短信'],
-    createTime: '2024-03-31 10:00:00'
+    createTime: '2024-03-31 10:00:00',
+    exitType: 'settlement'
   },
   { 
     id: 'SUSP-002', 
-    caseId: 'CASE-005', 
-    borrowerName: '钱七', 
-    phone: '13800138005',
+    caseId: 'KREDITOK008950', 
+    borrowerName: 'SARAH DAVIS', 
+    phone: '0822 1122 3344',
     reason: '住院', 
-    operator: '催收员A', 
+    operator: 'Budi Santoso', 
     endTime: '2024-04-30 23:59:59', 
     forbiddenFeatures: ['禁止分案', '禁止发送短信', '禁止电话外呼', '禁止WA发送', '禁止Email发送'],
-    createTime: '2024-03-30 15:30:00'
+    createTime: '2024-03-30 15:30:00',
+    exitType: 'extension'
+  },
+  { 
+    id: 'SUSP-003', 
+    caseId: 'KREDITOK008949', 
+    borrowerName: 'MICHAEL BROWN', 
+    phone: '0811 6677 8899',
+    reason: '结清', 
+    operator: 'Siti Aminah', 
+    endTime: '2024-05-15 23:59:59', 
+    forbiddenFeatures: ['禁止分案', '禁止发送短信'],
+    createTime: '2024-04-01 09:00:00',
+    exitType: 'settlement'
+  },
+  { 
+    id: 'SUSP-004', 
+    caseId: 'KREDITOK008952', 
+    borrowerName: 'EMILY JOHNSON', 
+    phone: '0818 9900 1122',
+    reason: '展期', 
+    operator: 'Siti Aminah', 
+    endTime: '2024-05-20 23:59:59', 
+    forbiddenFeatures: ['禁止分案', '禁止电话外呼'],
+    createTime: '2024-04-02 14:00:00',
+    exitType: 'extension'
   },
 ];
 
-const SuspendedCases: React.FC<{ onResume: (caseIds: string[]) => void }> = ({ onResume }) => {
+const SuspendedCases: React.FC<{ onResume: (caseIds: string[]) => void; onViewDetail?: (caseId: string) => void }> = ({ onResume, onViewDetail }) => {
   const [cases, setCases] = useState<SuspendedCase[]>(defaultSuspendedCases);
   const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
@@ -80,7 +109,29 @@ const SuspendedCases: React.FC<{ onResume: (caseIds: string[]) => void }> = ({ o
       title: t.caseId,
       dataIndex: 'caseId',
       key: 'caseId',
-      width: 120,
+      width: 150,
+      render: (caseId: string) => (
+        <a 
+          onClick={() => onViewDetail?.(caseId)} 
+          style={{ color: '#0d4f3c', fontWeight: 500, cursor: 'pointer' }}
+        >
+          {caseId}
+        </a>
+      ),
+    },
+    {
+      title: t.exitType,
+      dataIndex: 'exitType',
+      key: 'exitType',
+      width: 100,
+      render: (type: ExitType) => {
+        const typeMap: Record<ExitType, { color: string; label: string }> = {
+          settlement: { color: 'green', label: t.exitTypeSettlement },
+          extension: { color: 'purple', label: t.exitTypeExtension },
+        };
+        const info = typeMap[type];
+        return <Tag color={info.color} style={{ fontWeight: 500 }}>{info.label}</Tag>;
+      },
     },
     {
       title: t.borrowerName,

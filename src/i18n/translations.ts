@@ -305,6 +305,9 @@ export interface Translations {
   endTime: string;
   caseId: string;
   suspensionTime: string;
+  exitType: string;
+  exitTypeSettlement: string;
+  exitTypeExtension: string;
   operator: string;
   restoreTip: string;
   // 组织架构
@@ -798,6 +801,9 @@ export const translations: Record<Language, Translations> = {
     endTime: '停催到期时间',
     caseId: '案件号',
     suspensionTime: '停催时间',
+    exitType: '出催类型',
+    exitTypeSettlement: '结清',
+    exitTypeExtension: '展期',
     operator: '操作人',
     restoreTip: '恢复后案件将回到案件列表，所有限制将被解除。',
     confirmDelete: '确认删除',
@@ -1285,6 +1291,9 @@ export const translations: Record<Language, Translations> = {
     endTime: 'End Time',
     caseId: 'Case ID',
     suspensionTime: 'Suspension Time',
+    exitType: 'Type',
+    exitTypeSettlement: 'Settlement',
+    exitTypeExtension: 'Extension',
     operator: 'Operator',
     restoreTip: 'After restoration, cases will return to the case list and all restrictions will be lifted.',
     confirmDelete: 'Confirm Delete',
@@ -1772,6 +1781,9 @@ export const translations: Record<Language, Translations> = {
     endTime: 'Waktu Akhir',
     caseId: 'ID Kasus',
     suspensionTime: 'Waktu Penangguhan',
+    exitType: 'Jenis',
+    exitTypeSettlement: 'Pelunasan',
+    exitTypeExtension: 'Perpanjangan',
     operator: 'Operator',
     restoreTip: 'Setelah dipulihkan, kasus akan kembali ke daftar kasus dan semua batasan akan dihapus.',
     confirmDelete: 'Konfirmasi Hapus',

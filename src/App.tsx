@@ -106,7 +106,7 @@ const AppContent: React.FC = () => {
       case 'contactList':
         return <ContactList />;
       case 'system':
-        return <SystemManagement view={systemView} />;
+        return <SystemManagement view={systemView} onViewDetail={handleViewDetail} />;
       case 'marketing':
         return <MarketingModule view={systemView} />;
       default:

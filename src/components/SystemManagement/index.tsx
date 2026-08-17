@@ -16,6 +16,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 
 interface SystemManagementProps {
   view: string;
+  onViewDetail?: (caseId: string) => void;
 }
 
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => {
@@ -30,7 +31,7 @@ const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => {
   );
 };
 
-const SystemManagement: React.FC<SystemManagementProps> = ({ view }) => {
+const SystemManagement: React.FC<SystemManagementProps> = ({ view, onViewDetail }) => {
   useLanguage();
 
   const renderContent = () => {
@@ -38,13 +39,13 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ view }) => {
       case 'dashboard':
         return <Dashboard />;
       case 'caseList':
-        return <CaseList onViewDetail={() => {}} onSuspend={() => {}} />;
+        return <CaseList onViewDetail={onViewDetail || (() => {})} onSuspend={() => {}} />;
       case 'recovery':
         return <RecoveryList />;
       case 'reductionReview':
         return <WorkOrderReview />;
       case 'suspendedCases':
-        return <SuspendedCases onResume={() => {}} />;
+        return <SuspendedCases onResume={() => {}} onViewDetail={onViewDetail} />;
       case 'organization':
         return <OrganizationStructure />;
       case 'stage':
