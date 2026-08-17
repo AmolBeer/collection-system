@@ -18,6 +18,7 @@ interface Recovery {
   teamLeader: string;
   recoveryMethod: string;
   notes: string;
+  exitType: 'settlement' | 'extension';
 }
 
 interface User {
@@ -29,11 +30,11 @@ interface User {
 }
 
 const defaultRecoveries: Recovery[] = [
-  { id: 'REC-001', caseId: 'CASE-006', borrowerName: '孙八', phone: '13800138006', originalAmount: 45000, recoveredAmount: 45000, recoveryDate: '2024-03-30', collector: '催收员A', collectorId: 'collector1', team: '催收一组', teamLeader: '催收主管1', recoveryMethod: '电话催收', notes: '借款人主动还款' },
-  { id: 'REC-002', caseId: 'CASE-009', borrowerName: '郑十一', phone: '13800138009', originalAmount: 35000, recoveredAmount: 35000, recoveryDate: '2024-03-29', collector: '催收员B', collectorId: 'collector2', team: '催收二组', teamLeader: '催收主管2', recoveryMethod: '上门催收', notes: '借款人在家人陪同下还款' },
-  { id: 'REC-003', caseId: 'CASE-010', borrowerName: '王十二', phone: '13800138010', originalAmount: 60000, recoveredAmount: 60000, recoveryDate: '2024-03-28', collector: '催收员C', collectorId: 'collector3', team: '催收三组', teamLeader: '催收主管3', recoveryMethod: '短信催收', notes: '借款人通过VA码还款' },
-  { id: 'REC-004', caseId: 'CASE-011', borrowerName: '赵十三', phone: '13800138011', originalAmount: 25000, recoveredAmount: 25000, recoveryDate: '2024-03-27', collector: '催收员D', collectorId: 'collector4', team: '催收一组', teamLeader: '催收主管1', recoveryMethod: '电话催收', notes: '借款人承诺还款并按时到账' },
-  { id: 'REC-005', caseId: 'CASE-012', borrowerName: '钱十四', phone: '13800138012', originalAmount: 55000, recoveredAmount: 55000, recoveryDate: '2024-03-26', collector: '催收员E', collectorId: 'collector5', team: '催收二组', teamLeader: '催收主管2', recoveryMethod: '上门催收', notes: '借款人亲属代为还款' },
+  { id: 'REC-001', caseId: 'KREDITOK008946', borrowerName: 'EZI SADRAKH SAPUTRA', phone: '0821 6273 6949', originalAmount: 45000, recoveredAmount: 45000, recoveryDate: '2024-03-30', collector: '催收员A', collectorId: 'collector1', team: '催收一组', teamLeader: '催收主管1', recoveryMethod: '电话催收', notes: '借款人主动还款', exitType: 'settlement' },
+  { id: 'REC-002', caseId: 'KREDITOK008950', borrowerName: 'SARAH DAVIS', phone: '0822 1122 3344', originalAmount: 35000, recoveredAmount: 35000, recoveryDate: '2024-03-29', collector: '催收员B', collectorId: 'collector2', team: '催收二组', teamLeader: '催收主管2', recoveryMethod: '上门催收', notes: '借款人在家人陪同下还款', exitType: 'extension' },
+  { id: 'REC-003', caseId: 'KREDITOK008949', borrowerName: 'MICHAEL BROWN', phone: '0811 6677 8899', originalAmount: 60000, recoveredAmount: 60000, recoveryDate: '2024-03-28', collector: '催收员C', collectorId: 'collector3', team: '催收三组', teamLeader: '催收主管3', recoveryMethod: '短信催收', notes: '借款人通过VA码还款', exitType: 'settlement' },
+  { id: 'REC-004', caseId: 'KREDITOK008952', borrowerName: 'EMILY JOHNSON', phone: '0818 9900 1122', originalAmount: 25000, recoveredAmount: 25000, recoveryDate: '2024-03-27', collector: '催收员D', collectorId: 'collector4', team: '催收一组', teamLeader: '催收主管1', recoveryMethod: '电话催收', notes: '借款人承诺还款并按时到账', exitType: 'extension' },
+  { id: 'REC-005', caseId: 'KREDITOK008951', borrowerName: 'ROBERT WILSON', phone: '0819 5566 7788', originalAmount: 55000, recoveredAmount: 55000, recoveryDate: '2024-03-26', collector: '催收员E', collectorId: 'collector5', team: '催收二组', teamLeader: '催收主管2', recoveryMethod: '上门催收', notes: '借款人亲属代为还款', exitType: 'settlement' },
 ];
 
 // 模拟当前用户信息
@@ -58,7 +59,7 @@ const users: User[] = [
   { id: 'collector5', name: '催收员E', role: 'collector', team: '催收二组', managedUsers: [] },
 ];
 
-const RecoveryList: React.FC = () => {
+const RecoveryList: React.FC<{ onViewDetail?: (caseId: string) => void }> = ({ onViewDetail }) => {
   const [searchText, setSearchText] = useState('');
   const [teamFilter, setTeamFilter] = useState('all');
   const [collectorFilter, setCollectorFilter] = useState('all');
@@ -153,7 +154,29 @@ const RecoveryList: React.FC = () => {
       title: t.caseNo,
       dataIndex: 'caseId',
       key: 'caseId',
+      width: 150,
+      render: (caseId: string) => (
+        <a 
+          onClick={() => onViewDetail?.(caseId)} 
+          style={{ color: '#0d4f3c', fontWeight: 500, cursor: 'pointer' }}
+        >
+          {caseId}
+        </a>
+      ),
+    },
+    {
+      title: t.exitType,
+      dataIndex: 'exitType',
+      key: 'exitType',
       width: 100,
+      render: (type: 'settlement' | 'extension') => {
+        const typeMap = {
+          settlement: { color: 'green', label: t.exitTypeSettlement },
+          extension: { color: 'purple', label: t.exitTypeExtension },
+        };
+        const info = typeMap[type];
+        return <Tag color={info.color} style={{ fontWeight: 500 }}>{info.label}</Tag>;
+      },
     },
     {
       title: t.borrowerName,

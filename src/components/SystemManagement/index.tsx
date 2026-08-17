@@ -39,13 +39,13 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ view, onViewDetail 
       case 'dashboard':
         return <Dashboard />;
       case 'caseList':
-        return <CaseList onViewDetail={onViewDetail || (() => {})} onSuspend={() => {}} />;
+        return <CaseList onViewDetail={() => {}} onSuspend={() => {}} />;
       case 'recovery':
-        return <RecoveryList />;
+        return <RecoveryList onViewDetail={onViewDetail} />;
       case 'reductionReview':
         return <WorkOrderReview />;
       case 'suspendedCases':
-        return <SuspendedCases onResume={() => {}} onViewDetail={onViewDetail} />;
+        return <SuspendedCases onResume={() => {}} />;
       case 'organization':
         return <OrganizationStructure />;
       case 'stage':
