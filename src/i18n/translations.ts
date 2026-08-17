@@ -239,7 +239,10 @@ export interface Translations {
   position: string;
   username: string;
   email: string;
+  sendEmail: string;
   phone: string;
+  lastConnectTime: string;
+  noRecord: string;
   role: string;
   addUser: string;
   editUser: string;
@@ -734,7 +737,10 @@ export const translations: Record<Language, Translations> = {
     position: '职位',
     username: '用户名',
     email: '邮箱',
+    sendEmail: '发送邮件',
     phone: '电话',
+    lastConnectTime: '最近接通时间',
+    noRecord: '暂无',
     role: '角色',
     addUser: '添加用户',
     editUser: '编辑用户',
@@ -1218,7 +1224,10 @@ export const translations: Record<Language, Translations> = {
     position: 'Position',
     username: 'Username',
     email: 'Email',
+    sendEmail: 'Send Email',
     phone: 'Phone',
+    lastConnectTime: 'Last Connected',
+    noRecord: 'N/A',
     role: 'Role',
     addUser: 'Add User',
     editUser: 'Edit User',
@@ -1702,7 +1711,10 @@ export const translations: Record<Language, Translations> = {
     position: 'Posisi',
     username: 'Nama Pengguna',
     email: 'Email',
+    sendEmail: 'Kirim Email',
     phone: 'Telepon',
+    lastConnectTime: 'Terakhir Terhubung',
+    noRecord: 'Tidak Ada',
     role: 'Peran',
     addUser: 'Tambah Pengguna',
     editUser: 'Edit Pengguna',

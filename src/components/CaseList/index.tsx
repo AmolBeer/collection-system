@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Table, Button, Space, Select, Card, Tag, message, Modal, Form, DatePicker, Checkbox } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { SearchOutlined, EyeOutlined, SwapOutlined, PauseCircleOutlined, FilterOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, SwapOutlined, PauseCircleOutlined, FilterOutlined, MailOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { Dayjs } from 'dayjs';
 
@@ -9,6 +9,7 @@ interface Case {
   id: string;
   borrowerName: string;
   phone: string;
+  email: string;
   overdueDays: number;
   amount: number;
   stage: string;
@@ -17,6 +18,8 @@ interface Case {
   createTime: string;
   lastUpdateTime: string;
   lastFollowUpTime: string | null;
+  lastConnectTime: string | null;
+  lastAppLoginTime: string | null;
 }
 
 type CaseStatus = 'unassigned' | 'assigned_not_followed' | 'following';
@@ -38,18 +41,18 @@ const today = new Date().toISOString().slice(0, 10);
 
 const defaultCases: Case[] = [
   // 未分配（assignedTo = '-'）
-  { id: 'KREDITOK008954', borrowerName: 'AGUS PRATAMA', phone: '0856 1100 2200', overdueDays: 8, amount: 320000, stage: 'M0', status: 'Open', assignedTo: '-', createTime: `${today} 08:00:00`, lastUpdateTime: `${today} 08:00:00`, lastFollowUpTime: null },
-  { id: 'KREDITOK008955', borrowerName: 'PUTRI DEWI', phone: '0857 3300 4400', overdueDays: 18, amount: 580000, stage: 'M1', status: 'Open', assignedTo: '-', createTime: `${today} 08:15:00`, lastUpdateTime: `${today} 08:15:00`, lastFollowUpTime: null },
+  { id: 'KREDITOK008954', borrowerName: 'AGUS PRATAMA', phone: '0856 1100 2200', email: 'agus.pratama@gmail.com', overdueDays: 8, amount: 320000, stage: 'M0', status: 'Open', assignedTo: '-', createTime: `${today} 08:00:00`, lastUpdateTime: `${today} 08:00:00`, lastFollowUpTime: null, lastConnectTime: null, lastAppLoginTime: `${today} 07:30:00` },
+  { id: 'KREDITOK008955', borrowerName: 'PUTRI DEWI', phone: '0857 3300 4400', email: 'putri.dewi@yahoo.com', overdueDays: 18, amount: 580000, stage: 'M1', status: 'Open', assignedTo: '-', createTime: `${today} 08:15:00`, lastUpdateTime: `${today} 08:15:00`, lastFollowUpTime: null, lastConnectTime: null, lastAppLoginTime: '2024-03-25 22:10:00' },
   // 已分配未跟进（今天分配但催员未跟进）
-  { id: 'KREDITOK008946', borrowerName: 'EZI SADRAKH SAPUTRA', phone: '0821 6273 6949', overdueDays: 12, amount: 267947, stage: 'M1', status: 'Open', assignedTo: 'Dewi Anggraini', createTime: '2024-03-15 10:00:00', lastUpdateTime: `${today} 09:00:00`, lastFollowUpTime: '2024-03-29 14:30:00' },
-  { id: 'KREDITOK008948', borrowerName: 'JANE SMITH', phone: '0813 2233 4455', overdueDays: 5, amount: 300000, stage: 'M0', status: 'Open', assignedTo: 'Dewi Anggraini', createTime: '2024-03-20 11:00:00', lastUpdateTime: `${today} 09:30:00`, lastFollowUpTime: null },
-  { id: 'KREDITOK008950', borrowerName: 'SARAH DAVIS', phone: '0822 1122 3344', overdueDays: 100, amount: 1200000, stage: 'M4+', status: 'Open', assignedTo: 'Budi Santoso', createTime: '2024-02-10 08:00:00', lastUpdateTime: `${today} 10:00:00`, lastFollowUpTime: '2024-03-28 11:30:00' },
-  { id: 'KREDITOK008953', borrowerName: 'WILLIAM TAYLOR', phone: '0817 3344 5566', overdueDays: 85, amount: 900000, stage: 'M3', status: 'Open', assignedTo: 'Budi Santoso', createTime: '2024-02-20 15:00:00', lastUpdateTime: `${today} 10:30:00`, lastFollowUpTime: null },
+  { id: 'KREDITOK008946', borrowerName: 'EZI SADRAKH SAPUTRA', phone: '0821 6273 6949', email: 'ezi.sadrakh@gmail.com', overdueDays: 12, amount: 267947, stage: 'M1', status: 'Open', assignedTo: 'Dewi Anggraini', createTime: '2024-03-15 10:00:00', lastUpdateTime: `${today} 09:00:00`, lastFollowUpTime: '2024-03-29 14:30:00', lastConnectTime: '2024-03-28 10:15:00', lastAppLoginTime: `${today} 06:45:00` },
+  { id: 'KREDITOK008948', borrowerName: 'JANE SMITH', phone: '0813 2233 4455', email: 'jane.smith@hotmail.com', overdueDays: 5, amount: 300000, stage: 'M0', status: 'Open', assignedTo: 'Dewi Anggraini', createTime: '2024-03-20 11:00:00', lastUpdateTime: `${today} 09:30:00`, lastFollowUpTime: null, lastConnectTime: null, lastAppLoginTime: '2024-03-30 19:00:00' },
+  { id: 'KREDITOK008950', borrowerName: 'SARAH DAVIS', phone: '0822 1122 3344', email: 'sarah.davis@gmail.com', overdueDays: 100, amount: 1200000, stage: 'M4+', status: 'Open', assignedTo: 'Budi Santoso', createTime: '2024-02-10 08:00:00', lastUpdateTime: `${today} 10:00:00`, lastFollowUpTime: '2024-03-28 11:30:00', lastConnectTime: '2024-03-15 14:20:00', lastAppLoginTime: '2024-02-20 08:00:00' },
+  { id: 'KREDITOK008953', borrowerName: 'WILLIAM TAYLOR', phone: '0817 3344 5566', email: 'william.taylor@gmail.com', overdueDays: 85, amount: 900000, stage: 'M3', status: 'Open', assignedTo: 'Budi Santoso', createTime: '2024-02-20 15:00:00', lastUpdateTime: `${today} 10:30:00`, lastFollowUpTime: null, lastConnectTime: '2024-03-20 11:00:00', lastAppLoginTime: '2024-03-22 21:30:00' },
   // 跟进中（今天已有催收记录）
-  { id: 'KREDITOK008947', borrowerName: 'JOHN DOE', phone: '0812 3456 7890', overdueDays: 35, amount: 800000, stage: 'M2', status: 'Processing', assignedTo: 'Budi Santoso', createTime: '2024-03-10 09:00:00', lastUpdateTime: `${today} 10:15:00`, lastFollowUpTime: `${today} 10:15:00` },
-  { id: 'KREDITOK008949', borrowerName: 'MICHAEL BROWN', phone: '0811 6677 8899', overdueDays: 65, amount: 600000, stage: 'M3', status: 'Processing', assignedTo: 'Siti Aminah', createTime: '2024-02-25 14:00:00', lastUpdateTime: `${today} 16:20:00`, lastFollowUpTime: `${today} 14:00:00` },
-  { id: 'KREDITOK008951', borrowerName: 'ROBERT WILSON', phone: '0819 5566 7788', overdueDays: 25, amount: 450000, stage: 'M1', status: 'Completed', assignedTo: 'Dewi Anggraini', createTime: '2024-03-18 13:00:00', lastUpdateTime: `${today} 15:45:00`, lastFollowUpTime: `${today} 11:00:00` },
-  { id: 'KREDITOK008952', borrowerName: 'EMILY JOHNSON', phone: '0818 9900 1122', overdueDays: 45, amount: 750000, stage: 'M2', status: 'Processing', assignedTo: 'Siti Aminah', createTime: '2024-03-05 10:30:00', lastUpdateTime: `${today} 09:20:00`, lastFollowUpTime: `${today} 09:20:00` },
+  { id: 'KREDITOK008947', borrowerName: 'JOHN DOE', phone: '0812 3456 7890', email: 'john.doe@gmail.com', overdueDays: 35, amount: 800000, stage: 'M2', status: 'Processing', assignedTo: 'Budi Santoso', createTime: '2024-03-10 09:00:00', lastUpdateTime: `${today} 10:15:00`, lastFollowUpTime: `${today} 10:15:00`, lastConnectTime: `${today} 10:15:00`, lastAppLoginTime: `${today} 08:00:00` },
+  { id: 'KREDITOK008949', borrowerName: 'MICHAEL BROWN', phone: '0811 6677 8899', email: 'michael.brown@yahoo.com', overdueDays: 65, amount: 600000, stage: 'M3', status: 'Processing', assignedTo: 'Siti Aminah', createTime: '2024-02-25 14:00:00', lastUpdateTime: `${today} 16:20:00`, lastFollowUpTime: `${today} 14:00:00`, lastConnectTime: `${today} 14:00:00`, lastAppLoginTime: '2024-04-01 07:15:00' },
+  { id: 'KREDITOK008951', borrowerName: 'ROBERT WILSON', phone: '0819 5566 7788', email: 'robert.wilson@gmail.com', overdueDays: 25, amount: 450000, stage: 'M1', status: 'Completed', assignedTo: 'Dewi Anggraini', createTime: '2024-03-18 13:00:00', lastUpdateTime: `${today} 15:45:00`, lastFollowUpTime: `${today} 11:00:00`, lastConnectTime: `${today} 11:00:00`, lastAppLoginTime: `${today} 09:30:00` },
+  { id: 'KREDITOK008952', borrowerName: 'EMILY JOHNSON', phone: '0818 9900 1122', email: 'emily.johnson@gmail.com', overdueDays: 45, amount: 750000, stage: 'M2', status: 'Processing', assignedTo: 'Siti Aminah', createTime: '2024-03-05 10:30:00', lastUpdateTime: `${today} 09:20:00`, lastFollowUpTime: `${today} 09:20:00`, lastConnectTime: '2024-03-30 15:00:00', lastAppLoginTime: '2024-03-29 20:00:00' },
 ];
 
 const teams = [
@@ -191,6 +194,22 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       ),
     },
     {
+      title: t.email,
+      dataIndex: 'email',
+      key: 'email',
+      width: 200,
+      render: (email: string) => (
+        <a 
+          href={`mailto:${email}`} 
+          style={{ color: '#0d4f3c', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          title={t.sendEmail}
+        >
+          <MailOutlined style={{ color: '#0d4f3c' }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' }}>{email}</span>
+        </a>
+      ),
+    },
+    {
       title: t.overdueDays,
       dataIndex: 'overdueDays',
       key: 'overdueDays',
@@ -284,6 +303,26 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       render: (time: string) => (
         <span style={{ color: '#6b7280', fontSize: '12px' }}>{time}</span>
       ),
+    },
+    {
+      title: t.lastConnectTime,
+      dataIndex: 'lastConnectTime',
+      key: 'lastConnectTime',
+      width: 160,
+      render: (time: string | null) => (
+        time ? <span style={{ color: '#6b7280', fontSize: '12px' }}>{time}</span> : <span style={{ color: '#d1d5db', fontSize: '12px' }}>{t.noRecord}</span>
+      ),
+    },
+    {
+      title: t.lastAppLoginTime,
+      dataIndex: 'lastAppLoginTime',
+      key: 'lastAppLoginTime',
+      width: 160,
+      render: (time: string | null) => {
+        if (!time) return <span style={{ color: '#d1d5db', fontSize: '12px' }}>{t.noRecord}</span>;
+        const isRecent = time.slice(0, 10) === today;
+        return <span style={{ color: isRecent ? '#0d4f3c' : '#6b7280', fontSize: '12px', fontWeight: isRecent ? '500' : '400' }}>{time}</span>;
+      },
     },
     {
       title: t.action,
@@ -424,7 +463,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
             onChange: (selectedRowKeys) => setSelectedCases(selectedRowKeys as string[]),
           }}
           style={{ marginTop: '16px' }}
-          scroll={{ x: 1550 }}
+          scroll={{ x: 2000 }}
         />
       </Card>
 
