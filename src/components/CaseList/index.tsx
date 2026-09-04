@@ -56,18 +56,21 @@ const defaultCases: Case[] = [
 ];
 
 const teams = [
-  { value: 'team1', label: '催收一组' },
-  { value: 'team2', label: '催收二组' },
-  { value: 'team3', label: '催收三组' },
+  { value: 'team1', label: '催收一组', org: '总部-运营部' },
+  { value: 'team2', label: '催收二组', org: '总部-运营部' },
+  { value: 'team3', label: '催收三组', org: '雅加达分中心-运营部' },
 ];
 
 const collectors = [
-  { value: 'collector1', label: 'Dewi Anggraini', team: 'team1' },
-  { value: 'collector2', label: 'Budi Santoso', team: 'team2' },
-  { value: 'collector3', label: 'Siti Aminah', team: 'team3' },
-  { value: 'collector4', label: 'Rudi Hartono', team: 'team1' },
-  { value: 'collector5', label: 'Lisa Wijaya', team: 'team2' },
+  { value: 'collector1', label: 'Dewi Anggraini', team: 'team1', org: '总部-运营部-催收一组' },
+  { value: 'collector2', label: 'Budi Santoso', team: 'team2', org: '总部-运营部-催收二组' },
+  { value: 'collector3', label: 'Siti Aminah', team: 'team3', org: '雅加达分中心-运营部-催收三组' },
+  { value: 'collector4', label: 'Rudi Hartono', team: 'team1', org: '总部-运营部-催收一组' },
+  { value: 'collector5', label: 'Lisa Wijaya', team: 'team2', org: '总部-运营部-催收二组' },
+  { value: 'collector6', label: 'Andi Pratama', team: 'team3', org: '雅加达分中心-运营部-催收三组' },
 ];
+
+const formatCollectorLabel = (c: typeof collectors[number]) => `${c.org} - ${c.label}`;
 
 const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (caseIds: string[]) => void }> = ({ onViewDetail, onSuspend }) => {
   const { t } = useLanguage();
@@ -78,9 +81,9 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
   const [stageFilter, setStageFilter] = useState('all');
   const [collectorFilter, setCollectorFilter] = useState('all');
   const [assignModalVisible, setAssignModalVisible] = useState(false);
-  const [assignMode, setAssignMode] = useState<'team' | 'collector'>('team');
+  const [assignMode, setAssignMode] = useState<'team' | 'collector'>('collector');
   const [selectedTeam, setSelectedTeam] = useState('');
-  const [selectedCollector, setSelectedCollector] = useState('');
+  const [selectedCollectors, setSelectedCollectors] = useState<string[]>([]);
   const [distributionMode, setDistributionMode] = useState<'average' | 'manual'>('average');
   const [suspendModalVisible, setSuspendModalVisible] = useState(false);
   const [selectedReason, setSelectedReason] = useState('');
@@ -130,7 +133,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       message.error(t.pleaseSelectCollectionTeam);
       return;
     }
-    if (assignMode === 'collector' && !selectedCollector) {
+    if (assignMode === 'collector' && selectedCollectors.length === 0) {
       message.error(t.pleaseSelectCollector);
       return;
     }
@@ -139,8 +142,13 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       if (selectedCases.includes(caseItem.id)) {
         let newAssignedTo = caseItem.assignedTo;
         if (assignMode === 'collector') {
-          const collector = collectors.find(c => c.value === selectedCollector);
-          newAssignedTo = collector ? collector.label : newAssignedTo;
+          const selectedCollectorObjs = selectedCollectors
+            .map(v => collectors.find(c => c.value === v))
+            .filter((c): c is typeof collectors[number] => !!c);
+          if (selectedCollectorObjs.length > 0) {
+            const index = selectedCases.indexOf(caseItem.id) % selectedCollectorObjs.length;
+            newAssignedTo = selectedCollectorObjs[index].label;
+          }
         } else if (assignMode === 'team') {
           const teamCollectors = collectors.filter(c => c.team === selectedTeam);
           if (teamCollectors.length > 0) {
@@ -159,7 +167,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
     setAssignModalVisible(false);
     setSelectedCases([]);
     message.success(t.successfullyAssigned.replace('{count}', selectedCases.length.toString()));
-  }, [assignMode, selectedTeam, selectedCollector, selectedCases, t]);
+  }, [assignMode, selectedTeam, selectedCollectors, selectedCases, t]);
 
   const columns: ColumnsType<Case> = [
     {
@@ -438,7 +446,7 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
               style={{ width: 140 }}
               options={[
                 { value: 'all', label: t.all },
-                ...collectors.map(collector => ({ value: collector.label, label: collector.label })),
+                ...collectors.map(collector => ({ value: collector.label, label: formatCollectorLabel(collector) })),
               ]}
             />
           </div>
@@ -473,14 +481,18 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
         open={assignModalVisible}
         onOk={handleAssignConfirm}
         onCancel={() => setAssignModalVisible(false)}
-        width={500}
+        width={560}
         style={{ borderRadius: '12px' }}
       >
         <Form layout="vertical">
           <Form.Item label={t.assignmentMode}>
             <Select
               value={assignMode}
-              onChange={setAssignMode}
+              onChange={(v) => {
+                setAssignMode(v);
+                setSelectedTeam('');
+                setSelectedCollectors([]);
+              }}
               options={[
                 { value: 'team', label: t.assignByTeam },
                 { value: 'collector', label: t.assignToCollector },
@@ -513,15 +525,63 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
           {assignMode === 'collector' && (
             <Form.Item label={t.selectCollector}>
               <Select
-                value={selectedCollector}
-                onChange={setSelectedCollector}
+                mode="multiple"
+                value={selectedCollectors}
+                onChange={setSelectedCollectors}
+                optionFilterProp="label"
                 options={collectors.map(collector => ({
                   value: collector.value,
-                  label: `${collector.label}`,
+                  label: formatCollectorLabel(collector),
                 }))}
+                placeholder="支持选择多名催收员，案件将平均分配"
+                maxTagCount="responsive"
               />
             </Form.Item>
           )}
+
+          {/* 分配预览 */}
+          {(() => {
+            const totalCases = selectedCases.length;
+            let collectorCount = 0;
+
+            if (assignMode === 'collector' && selectedCollectors.length > 0) {
+              collectorCount = selectedCollectors.length;
+            } else if (assignMode === 'team' && selectedTeam) {
+              collectorCount = collectors.filter(c => c.team === selectedTeam).length;
+            }
+
+            if (collectorCount === 0) return null;
+
+            const avg = collectorCount > 0 ? totalCases / collectorCount : 0;
+
+            return (
+              <Form.Item label="分配预览">
+                <div style={{
+                  border: '1px solid #e5e7eb', borderRadius: 8,
+                  padding: '14px 16px', backgroundColor: '#fafafa',
+                }}>
+                  <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                    <div style={{ textAlign: 'center', flex: 1 }}>
+                      <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: 2 }}>参与人数</div>
+                      <div style={{ fontSize: '22px', fontWeight: 700, color: '#0d4f3c' }}>{collectorCount}</div>
+                    </div>
+                    <div style={{ width: 1, height: 40, backgroundColor: '#e5e7eb' }} />
+                    <div style={{ textAlign: 'center', flex: 1 }}>
+                      <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: 2 }}>待分配案件</div>
+                      <div style={{ fontSize: '22px', fontWeight: 700, color: '#0d4f3c' }}>{totalCases}</div>
+                    </div>
+                    <div style={{ width: 1, height: 40, backgroundColor: '#e5e7eb' }} />
+                    <div style={{ textAlign: 'center', flex: 1 }}>
+                      <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: 2 }}>人均件数</div>
+                      <div style={{ fontSize: '22px', fontWeight: 700, color: '#0d4f3c' }}>
+                        {totalCases === 0 ? 0 : avg % 1 === 0 ? avg : avg.toFixed(1)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Form.Item>
+            );
+          })()}
 
           <Form.Item>
             <div style={{ color: '#6b7280', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>

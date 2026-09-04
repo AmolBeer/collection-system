@@ -407,6 +407,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     paymentCode?: string;
     paymentTime?: string;
     completedTime?: string;
+    images?: { id: string; name: string; dataUrl: string }[];
   }
 
   // 减免申请记录（模拟）- 覆盖整个流程状态
@@ -511,6 +512,9 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
 
   // 减免申请理由
   const [reductionReason, setReductionReason] = useState<string>('');
+
+  // 减免申请粘贴图片
+  const [reductionImages, setReductionImages] = useState<{ id: string; name: string; dataUrl: string }[]>([]);
 
   // 指定金额还款
   const [specifiedPaymentModalVisible, setSpecifiedPaymentModalVisible] = useState(false);
@@ -720,15 +724,17 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       status: 'pending',
       applyTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' +
                  new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      images: reductionImages,
     };
 
     setReductionApplications(prev => [newApplication, ...prev]);
     setReductionReason('');
+    setReductionImages([]);
     setRequestedReduction(0);
     setReductionType('nonSettle');
     message.success(`减免申请提交成功！申请编号: ${newApplication.applicationId}`);
     setReductionModalVisible(false);
-  }, [selectedBills, bills, reductionReason, requestedReduction, reductionType, selectedTotal, reductionCalculation]);
+  }, [selectedBills, bills, reductionReason, requestedReduction, reductionType, selectedTotal, reductionCalculation, reductionImages]);
 
   const images = [
     { id: '1', name: 'KTP (身份证)', type: '证件', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=Indonesian%20KTP%20identity%20card%20front%20view%20official%20document&image_size=portrait_4_3' },
@@ -2308,6 +2314,8 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
           setReductionModalVisible(false);
           setRequestedReduction(0);
           setReductionType('nonSettle');
+          setReductionReason('');
+          setReductionImages([]);
         }}
         onOk={handleApplyReduction}
         width={750}
@@ -2415,15 +2423,146 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
             </div>
           </div>
 
-          {/* Reason */}
+          {/* Reason & Images */}
           <div>
             <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Reason <span style={{ color: '#ef4444' }}>*</span></label>
             <textarea 
               placeholder="Enter reason for reduction request..." 
-              style={{ width: '100%', height: '80px', borderRadius: '8px', padding: '12px', border: '1px solid #d1d5db', fontSize: '13px' }}
+              style={{ width: '100%', height: '80px', borderRadius: '8px', padding: '12px', border: '1px solid #d1d5db', fontSize: '13px', resize: 'vertical', boxSizing: 'border-box' }}
               value={reductionReason}
               onChange={(e) => setReductionReason(e.target.value)}
             />
+            {/* Image Paste Area */}
+            <div style={{ marginTop: '12px' }}>
+              <div
+                tabIndex={0}
+                onPaste={(e) => {
+                  const clipboardItems = e.clipboardData?.items;
+                  if (!clipboardItems) return;
+                  let imageCount = 0;
+                  for (let i = 0; i < clipboardItems.length; i++) {
+                    const item = clipboardItems[i];
+                    if (item.type.startsWith('image/')) {
+                      const file = item.getAsFile();
+                      if (file) {
+                        imageCount++;
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const dataUrl = event.target?.result as string;
+                          setReductionImages(prev => [...prev, {
+                            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+                            name: `Pasted Image ${prev.length + 1}`,
+                            dataUrl,
+                          }]);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }
+                  }
+                  if (imageCount === 0) {
+                    message.warning('剪贴板中未找到图片，请先复制图片后再粘贴');
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  minHeight: '100px',
+                  border: '2px dashed #d1d5db',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  backgroundColor: '#fafafa',
+                  cursor: 'text',
+                  outline: 'none',
+                  transition: 'border-color 0.2s, background-color 0.2s',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#8b5cf6';
+                  e.currentTarget.style.backgroundColor = '#fff';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.backgroundColor = '#fafafa';
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: '13px', pointerEvents: 'none', userSelect: 'none' }}>
+                  <div style={{ marginBottom: '6px', fontSize: '22px' }}>📋</div>
+                  <div style={{ fontWeight: '500', color: '#374151' }}>Paste Images Here</div>
+                  <div style={{ marginTop: '4px', color: '#9ca3af' }}>Copy image then press Ctrl+V (or Cmd+V on Mac)</div>
+                  <div style={{ marginTop: '2px', color: '#9ca3af', fontSize: '12px' }}>Click here to focus first if paste doesn't work</div>
+                </div>
+              </div>
+              {/* Pasted Images Preview */}
+              {reductionImages.length > 0 && (
+                <div style={{
+                  marginTop: '12px',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                  gap: '10px',
+                }}>
+                  {reductionImages.map((img) => (
+                    <div
+                      key={img.id}
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        paddingTop: '100%',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        border: '1px solid #e5e7eb',
+                        backgroundColor: '#fff',
+                      }}
+                    >
+                      <img
+                        src={img.dataUrl}
+                        alt={img.name}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          cursor: 'zoom-in',
+                        }}
+                        onClick={() => setPreviewImage(img.dataUrl)}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReductionImages(prev => prev.filter(i => i.id !== img.id));
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                          color: '#fff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1,
+                          padding: 0,
+                        }}
+                        title="Remove image"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {reductionImages.length > 0 && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+                  {reductionImages.length} image{reductionImages.length > 1 ? 's' : ''} attached · Click image to preview · Click × to remove
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Application Notice */}

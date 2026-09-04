@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Button, Avatar, Tooltip, Dropdown, Select } from 'antd';
-import { 
-  HomeOutlined, 
-  FileTextOutlined, 
-  TeamOutlined, 
-  PhoneOutlined, 
-  CreditCardOutlined, 
-  FileSearchOutlined, 
-  BarChartOutlined, 
-  SettingOutlined, 
+import {
+  HomeOutlined,
+  FileTextOutlined,
+  TeamOutlined,
+  FileSearchOutlined,
+  CreditCardOutlined,
+  SettingOutlined,
   QuestionCircleOutlined,
   DownOutlined,
   UserOutlined,
@@ -22,28 +20,29 @@ import {
   DatabaseOutlined,
   AuditOutlined,
   ClockCircleOutlined,
-  MessageOutlined,
   GlobalOutlined,
-  ShareAltOutlined
+  ShareAltOutlined,
+  SendOutlined,
 } from '@ant-design/icons';
 import SystemManagement from './components/SystemManagement';
-import MarketingModule from './components/SystemManagement/MarketingModule';
 import CaseList from './components/CaseList';
 import CaseDetail from './components/CaseDetail';
 import Dashboard from './components/Dashboard';
-import ContactList from './components/ContactList';
 import NotificationCenter from './components/NotificationCenter';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import { Language } from './types';
 
 const { Content, Sider, Footer } = Layout;
 
-type MenuItem = 'dashboard' | 'customers' | 'callCenter' | 'payments' | 'documents' | 'reports' | 'system' | 'marketing' | 
-                'marketingTemplate' | 'marketingCustomer' |
-                'caseList' | 'recovery' | 'reductionReview' | 'suspendedCases' | 'organization' | 'stage' | 'autoAllocation' | 
+type MenuItem = 'dashboard' | 'system' |
+                'msgProvider' |
+                'msgTemplateSMS' | 'msgTemplateEmail' | 'msgTemplateRCS' | 'msgTemplateIVR' | 'msgTemplateAI' | 'msgTemplateWABA' | 'msgTemplateAPP' |
+                'msgSendSMS' | 'msgSendEmail' | 'msgSendRCS' | 'msgSendIVR' | 'msgSendAI' | 'msgSendWABA' | 'msgSendAPP' |
+                'msgRecords' |
+                'caseList' | 'recovery' | 'reductionReview' | 'suspendedCases' | 'organization' | 'stage' | 'autoAllocation' |
                 'outsourcing' | 'reduction' | 'schedule' | 'account' | 'role' | 'menuManagement' | 'dictManagement' | 'logManagement';
 
-type ViewMode = 'dashboard' | 'caseList' | 'caseDetail' | 'system' | 'marketing' | 'contactList';
+type ViewMode = 'dashboard' | 'caseList' | 'caseDetail' | 'system';
 
 const LanguageSwitcher: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
@@ -103,12 +102,8 @@ const AppContent: React.FC = () => {
             onBack={handleBackToList}
           />
         );
-      case 'contactList':
-        return <ContactList />;
       case 'system':
         return <SystemManagement view={systemView} onViewDetail={handleViewDetail} />;
-      case 'marketing':
-        return <MarketingModule view={systemView} />;
       default:
         return <CaseList onViewDetail={handleViewDetail} onSuspend={handleSuspend} />;
     }
@@ -119,15 +114,6 @@ const AppContent: React.FC = () => {
     switch (key) {
       case 'dashboard':
         setViewMode('dashboard');
-        break;
-      case 'customers':
-        setViewMode('contactList');
-        break;
-      case 'marketing':
-      case 'marketingTemplate':
-      case 'marketingCustomer':
-        setSystemView(key);
-        setViewMode('marketing');
         break;
       case 'caseList':
       case 'recovery':
@@ -144,6 +130,22 @@ const AppContent: React.FC = () => {
       case 'menuManagement':
       case 'dictManagement':
       case 'logManagement':
+      case 'msgProvider':
+      case 'msgTemplateSMS':
+      case 'msgTemplateEmail':
+      case 'msgTemplateRCS':
+      case 'msgTemplateIVR':
+      case 'msgTemplateAI':
+      case 'msgTemplateWABA':
+      case 'msgTemplateAPP':
+      case 'msgSendSMS':
+      case 'msgSendEmail':
+      case 'msgSendRCS':
+      case 'msgSendIVR':
+      case 'msgSendAI':
+      case 'msgSendWABA':
+      case 'msgSendAPP':
+      case 'msgRecords':
         setSystemView(key);
         setViewMode('system');
         break;
@@ -197,50 +199,8 @@ const AppContent: React.FC = () => {
               label: <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{t.dashboard}</span>,
             },
             {
-              key: 'customers',
-              icon: <TeamOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />,
-              label: <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{t.customerGroup}</span>,
-            },
-            {
-              key: 'callCenter',
-              icon: <PhoneOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />,
-              label: <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{t.callCenter}</span>,
-            },
-            {
-              key: 'payments',
-              icon: <FileSearchOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />,
-              label: <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{t.payments}</span>,
-            },
-            {
-              key: 'documents',
-              icon: <FileTextOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />,
-              label: <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{t.documents}</span>,
-            },
-            {
-              key: 'reports',
-              icon: <BarChartOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />,
-              label: <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{t.reports}</span>,
-            },
-            {
               type: 'divider' as const,
               style: { borderColor: 'rgba(255, 255, 255, 0.2)' },
-            },
-            {
-              key: 'marketing',
-              icon: <SettingOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />,
-              label: <span style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{t.marketingManagement}</span>,
-              children: [
-                {
-                  key: 'marketingTemplate',
-                  icon: <MessageOutlined style={{ color: 'rgba(255, 255, 255, 0.5)' }} />,
-                  label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>{t.smsTemplate}</span>,
-                },
-                {
-                  key: 'marketingCustomer',
-                  icon: <UserOutlined style={{ color: 'rgba(255, 255, 255, 0.5)' }} />,
-                  label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>营销管理</span>,
-                },
-              ],
             },
             {
               key: 'system',
@@ -305,6 +265,47 @@ const AppContent: React.FC = () => {
                       key: 'schedule',
                       icon: <ClockCircleOutlined style={{ color: 'rgba(255, 255, 255, 0.5)' }} />,
                       label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>{t.scheduleManagement}</span>,
+                    },
+                    {
+                      key: 'msgCenterGroup',
+                      icon: <SendOutlined style={{ color: 'rgba(255, 255, 255, 0.5)' }} />,
+                      label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>消息中心</span>,
+                      children: [
+                        {
+                          key: 'msgProvider',
+                          label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>服务商管理</span>,
+                        },
+                        {
+                          key: 'msgTemplateGroup',
+                          label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>模板管理</span>,
+                          children: [
+                            { key: 'msgTemplateSMS', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>短信 SMS</span> },
+                            { key: 'msgTemplateEmail', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>邮件 Email</span> },
+                            { key: 'msgTemplateRCS', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>富媒体 RCS</span> },
+                            { key: 'msgTemplateIVR', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>语音 IVR</span> },
+                            { key: 'msgTemplateAI', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>AI 智能</span> },
+                            { key: 'msgTemplateWABA', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>WhatsApp</span> },
+                            { key: 'msgTemplateAPP', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>APP Push</span> },
+                          ],
+                        },
+                        {
+                          key: 'msgSendGroup',
+                          label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>发送任务</span>,
+                          children: [
+                            { key: 'msgSendSMS', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>短信 SMS</span> },
+                            { key: 'msgSendEmail', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>邮件 Email</span> },
+                            { key: 'msgSendRCS', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>富媒体 RCS</span> },
+                            { key: 'msgSendIVR', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>语音 IVR</span> },
+                            { key: 'msgSendAI', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>AI 智能</span> },
+                            { key: 'msgSendWABA', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>WhatsApp</span> },
+                            { key: 'msgSendAPP', label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>APP Push</span> },
+                          ],
+                        },
+                        {
+                          key: 'msgRecords',
+                          label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>发送记录</span>,
+                        },
+                      ],
                     },
                   ],
                 },
@@ -381,10 +382,7 @@ const AppContent: React.FC = () => {
               <span style={{ color: '#1f2937', fontWeight: '500', fontSize: '14px' }}>{t.dashboard}</span>
             )}
             {viewMode === 'system' && (
-              <span style={{ color: '#1f2937', fontWeight: '500', fontSize: '14px' }}>{t.collectionSystem}</span>
-            )}
-            {viewMode === 'marketing' && (
-              <span style={{ color: '#1f2937', fontWeight: '500', fontSize: '14px' }}>{t.marketingManagement}</span>
+              <span style={{ color: '#1f2937', fontWeight: 500, fontSize: '14px' }}>{t.collectionSystem}</span>
             )}
           </div>
 

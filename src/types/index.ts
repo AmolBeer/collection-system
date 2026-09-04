@@ -111,6 +111,9 @@ export interface ReductionApplication {
   billDetails: BillDetail[];
   ruleId?: string;
   specialRuleId?: string;
+  reason?: string;
+  billIds?: string[];
+  images?: { id: string; name: string; dataUrl: string }[];
 }
 
 export interface SettlementResult {
