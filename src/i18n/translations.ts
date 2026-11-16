@@ -455,6 +455,7 @@ export interface Translations {
   // 自动分案配置
   timeRange: string;
   allocationTeam: string;
+  groupAllocationRatio: string;
   allocationCollector: string;
   roundRobin: string;
   capacity: string;
@@ -514,6 +515,9 @@ export interface Translations {
   extending: string;
   pendingExtension: string;
   extensionCountLabel: string;
+  // 附件图片
+  attachmentImages: string;
+  noImages: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -925,6 +929,7 @@ export const translations: Record<Language, Translations> = {
     random: '随机',
     timeRange: '时间范围',
     allocationTeam: '分配到组',
+    groupAllocationRatio: '催收小组 / 分案比例',
     allocationCollector: '分配到催员',
     roundRobin: '轮询分配',
     capacity: '容量分配',
@@ -1006,6 +1011,8 @@ export const translations: Record<Language, Translations> = {
     extending: '展期中',
     pendingExtension: '申请中',
     extensionCountLabel: '已展期',
+    attachmentImages: '附件图片',
+    noImages: '暂无图片',
   },
   en: {
     // 工单审核相关
@@ -1415,6 +1422,7 @@ export const translations: Record<Language, Translations> = {
     random: 'Random',
     timeRange: 'Time Range',
     allocationTeam: 'Allocation Team',
+    groupAllocationRatio: 'Collector Group / Ratio',
     allocationCollector: 'Allocation Collector',
     roundRobin: 'Round Robin',
     capacity: 'Capacity',
@@ -1496,6 +1504,8 @@ export const translations: Record<Language, Translations> = {
     extending: 'Extending',
     pendingExtension: 'Pending',
     extensionCountLabel: 'Extended',
+    attachmentImages: 'Attachment Images',
+    noImages: 'No images',
   },
   id: {
     // 工单审核相关
@@ -1905,6 +1915,7 @@ export const translations: Record<Language, Translations> = {
     random: 'Acak',
     timeRange: 'Rentang Waktu',
     allocationTeam: 'Tim Alokasi',
+    groupAllocationRatio: 'Grup Kolektor / Rasio',
     allocationCollector: 'Kolektor Alokasi',
     roundRobin: 'Round Robin',
     capacity: 'Kapasitas',
@@ -1986,5 +1997,7 @@ export const translations: Record<Language, Translations> = {
     extending: 'Aktif',
     pendingExtension: 'Pengajuan',
     extensionCountLabel: 'Diperpanjang',
+    attachmentImages: 'Lampiran Gambar',
+    noImages: 'Tidak ada gambar',
   },
 };

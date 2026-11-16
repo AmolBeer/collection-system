@@ -4,14 +4,20 @@ import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { useLanguage } from '../../i18n/LanguageContext';
 
+// 催收小组分案比例
+interface GroupAllocation {
+  group: string;
+  ratio: number; // 分案比例（%）
+}
+
 interface AutoAllocationRule {
   id: string;
   ruleName: string;
   products: string[];
   overdueStage: string;
   overdueStageRange: { start: string; end: string } | null;
-  collectorGroup: string;
-  allocationType: 'roundRobin' | 'loadBalance' | 'random';
+  groupAllocations: GroupAllocation[];
+  allocationType: 'average' | 'loadBalance' | 'random';
   priority: number;
   maxCasesPerCollector: number | null;
   startTime: string;
@@ -28,8 +34,11 @@ const defaultRules: AutoAllocationRule[] = [
     products: ['个人贷款'],
     overdueStage: 'M1',
     overdueStageRange: null,
-    collectorGroup: '催收一组',
-    allocationType: 'roundRobin',
+    groupAllocations: [
+      { group: '催收一组', ratio: 60 },
+      { group: '催收二组', ratio: 40 },
+    ],
+    allocationType: 'average',
     priority: 1,
     maxCasesPerCollector: 50,
     startTime: '09:00',
@@ -44,7 +53,11 @@ const defaultRules: AutoAllocationRule[] = [
     products: ['企业贷款', '个人贷款'],
     overdueStage: 'custom',
     overdueStageRange: { start: 'M1', end: 'M3' },
-    collectorGroup: '催收二组',
+    groupAllocations: [
+      { group: '催收三组', ratio: 50 },
+      { group: '催收四组', ratio: 30 },
+      { group: 'VIP催收组', ratio: 20 },
+    ],
     allocationType: 'loadBalance',
     priority: 2,
     maxCasesPerCollector: 30,
@@ -60,7 +73,7 @@ const products = ['个人贷款', '企业贷款', '信用卡', '消费金融', '
 const overdueStages = ['M0', 'M1', 'M2', 'M3', 'M4+'];
 const collectorGroups = ['催收一组', '催收二组', '催收三组', '催收四组', 'VIP催收组'];
 const allocationTypes = [
-  { value: 'roundRobin', label: '轮询分配' },
+  { value: 'average', label: '均分' },
   { value: 'loadBalance', label: '负载均衡' },
   { value: 'random', label: '随机分配' },
 ];
@@ -85,6 +98,8 @@ const AutoAllocationManagement: React.FC = () => {
     keyword: '',
   });
   const [selectedProduct, setSelectedProduct] = useState<string>('');
+  // 各催收小组的分案比例输入值
+  const [ratioInputs, setRatioInputs] = useState<Record<string, number | null>>({});
 
   const filteredRules = useMemo(() => {
     return rules.filter(rule => {
@@ -93,7 +108,7 @@ const AutoAllocationManagement: React.FC = () => {
       const matchKeyword = !searchParams.keyword || 
         rule.ruleName.toLowerCase().includes(searchParams.keyword.toLowerCase()) ||
         rule.products.some(p => p.toLowerCase().includes(searchParams.keyword.toLowerCase())) ||
-        rule.collectorGroup.toLowerCase().includes(searchParams.keyword.toLowerCase());
+        rule.groupAllocations.some(g => g.group.toLowerCase().includes(searchParams.keyword.toLowerCase()));
       return matchProduct && matchStatus && matchKeyword;
     });
   }, [rules, searchParams]);
@@ -113,13 +128,31 @@ const AutoAllocationManagement: React.FC = () => {
   const handleAdd = () => {
     form.resetFields();
     setEditingRule(null);
+    setRatioInputs({});
     setModalVisible(true);
   };
 
   const handleEdit = (record: AutoAllocationRule) => {
-    form.setFieldsValue(record);
+    form.setFieldsValue({
+      ...record,
+      collectorGroups: record.groupAllocations.map(g => g.group),
+    });
+    setRatioInputs(
+      record.groupAllocations.reduce((acc, g) => ({ ...acc, [g.group]: g.ratio }), {} as Record<string, number | null>)
+    );
     setEditingRule(record);
     setModalVisible(true);
+  };
+
+  // 小组选择变化时，保留已有比例，新增小组默认空值
+  const syncRatioInputs = (groups: string[] = []) => {
+    setRatioInputs(prev => {
+      const next: Record<string, number | null> = {};
+      groups.forEach(group => {
+        next[group] = prev[group] ?? null;
+      });
+      return next;
+    });
   };
 
   const handleDelete = (id: string) => {
@@ -150,16 +183,33 @@ const AutoAllocationManagement: React.FC = () => {
   };
 
   const handleSave = async () => {
-    console.log('handleSave called');
     try {
       const values = await form.validateFields();
-      console.log('Form values:', values);
-      
+
+      // 校验小组分案比例：必填且合计必须为 100%
+      const selectedGroups: string[] = values.collectorGroups || [];
+      const groupAllocations: GroupAllocation[] = selectedGroups.map(group => ({
+        group,
+        ratio: ratioInputs[group] as number,
+      }));
+      const missingRatio = groupAllocations.some(g => g.ratio === null || g.ratio === undefined);
+      if (missingRatio) {
+        message.error('请为每个已选催收小组填写分案比例');
+        return;
+      }
+      const totalRatio = groupAllocations.reduce((sum, g) => sum + Number(g.ratio), 0);
+      if (Math.abs(totalRatio - 100) > 0.001) {
+        message.error(`各小组分案比例之和必须为 100%，当前合计 ${totalRatio}%，请调整后再保存`);
+        return;
+      }
+
       const processedValues = {
         ...values,
+        groupAllocations,
         overdueStageRange: values.overdueStage === 'custom' ? values.overdueStageRange : null,
       };
-      
+      delete processedValues.collectorGroups;
+
       await validateDuplicateRule(processedValues);
       
       if (editingRule) {
@@ -227,10 +277,17 @@ const AutoAllocationManagement: React.FC = () => {
       },
     },
     {
-      title: t.collectorGroup,
-      dataIndex: 'collectorGroup',
-      key: 'collectorGroup',
-      width: 100,
+      title: t.groupAllocationRatio,
+      dataIndex: 'groupAllocations',
+      key: 'groupAllocations',
+      width: 240,
+      render: (groupAllocations: GroupAllocation[]) => (
+        <Space size={[4, 4]} wrap>
+          {groupAllocations.map(g => (
+            <Tag key={g.group} color="blue">{g.group} {g.ratio}%</Tag>
+          ))}
+        </Space>
+      ),
     },
     {
       title: t.allocationTeam,
@@ -239,7 +296,7 @@ const AutoAllocationManagement: React.FC = () => {
       width: 100,
       render: (type: string) => {
         const typeMap: Record<string, string> = {
-          'roundRobin': t.roundRobin,
+          'average': t.average,
           'loadBalance': t.loadBalance,
           'random': t.random,
         };
@@ -425,12 +482,21 @@ const AutoAllocationManagement: React.FC = () => {
         onOk={handleModalOk}
         onCancel={() => {
           setModalVisible(false);
+          setRatioInputs({});
           form.resetFields();
         }}
         width={600}
         okText={editingRule ? '保存修改' : '确认提交'}
       >
-        <Form form={form} layout="vertical">
+        <Form
+          form={form}
+          layout="vertical"
+          onValuesChange={(changedValues) => {
+            if ('collectorGroups' in changedValues) {
+              syncRatioInputs(changedValues.collectorGroups);
+            }
+          }}
+        >
           <Form.Item
             name="ruleName"
             label="规则名称"
@@ -464,17 +530,77 @@ const AutoAllocationManagement: React.FC = () => {
             </Col>
             <Col span={12}>
               <Form.Item
-                name="collectorGroup"
+                name="collectorGroups"
                 label="分配对象（催收小组）"
-                rules={[{ required: true, message: '请选择催收小组' }]}
+                rules={[{ required: true, message: '请至少选择一个催收小组' }]}
               >
                 <Select
-                  placeholder="请选择催收小组"
+                  mode="multiple"
+                  placeholder="请选择催收小组（可多选）"
                   options={collectorGroups.map(group => ({ value: group, label: group }))}
+                  maxTagCount="responsive"
                 />
               </Form.Item>
             </Col>
           </Row>
+
+          {/* 各小组分案比例 */}
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) => prevValues.collectorGroups !== currentValues.collectorGroups}
+          >
+            {({ getFieldValue }) => {
+              const groups: string[] = getFieldValue('collectorGroups') || [];
+              if (groups.length === 0) return null;
+              const totalRatio = groups.reduce((sum, group) => sum + (ratioInputs[group] ?? 0), 0);
+              return (
+                <Form.Item label="分案比例" required>
+                  <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '10px 12px' }}>
+                    {groups.map((group, index) => (
+                      <div
+                        key={group}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}
+                      >
+                        <span style={{ color: '#374151', fontSize: 13 }}>
+                          {index + 1}. {group}
+                        </span>
+                        <InputNumber
+                          min={0}
+                          max={100}
+                          precision={0}
+                          placeholder="请输入分案比例"
+                          addonAfter="%"
+                          style={{ width: 160 }}
+                          value={ratioInputs[group] ?? undefined}
+                          onChange={(value) =>
+                            setRatioInputs(prev => ({ ...prev, [group]: value === null ? null : Number(value) }))
+                          }
+                        />
+                      </div>
+                    ))}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        borderTop: '1px solid #f3f4f6',
+                        paddingTop: 8,
+                        fontSize: 13,
+                        color: totalRatio === 100 ? '#16a34a' : '#dc2626',
+                      }}
+                    >
+                      <span>合计</span>
+                      <span>
+                        {totalRatio}%{totalRatio !== 100 && '（需等于 100%）'}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: 8, fontSize: 12, color: '#9ca3af', lineHeight: '18px' }}>
+                      分配逻辑：按比例计算后先向下取整，剩余订单分配给小数部分最大的小组；小数部分相同时，按上述小组配置顺序分配。
+                    </div>
+                  </div>
+                </Form.Item>
+              );
+            }}
+          </Form.Item>
           
           <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.overdueStage !== currentValues.overdueStage}>
             {({ getFieldValue }) => {

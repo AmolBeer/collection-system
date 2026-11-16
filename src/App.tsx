@@ -23,6 +23,7 @@ import {
   GlobalOutlined,
   ShareAltOutlined,
   SendOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import SystemManagement from './components/SystemManagement';
 import CaseList from './components/CaseList';
@@ -40,7 +41,7 @@ type MenuItem = 'dashboard' | 'system' |
                 'msgSendSMS' | 'msgSendEmail' | 'msgSendRCS' | 'msgSendIVR' | 'msgSendAI' | 'msgSendWABA' | 'msgSendAPP' |
                 'msgRecords' |
                 'caseList' | 'recovery' | 'reductionReview' | 'suspendedCases' | 'organization' | 'stage' | 'autoAllocation' |
-                'outsourcing' | 'reduction' | 'schedule' | 'account' | 'role' | 'menuManagement' | 'dictManagement' | 'logManagement';
+                'outsourcing' | 'reduction' | 'extensionRule' | 'schedule' | 'account' | 'role' | 'menuManagement' | 'dictManagement' | 'logManagement';
 
 type ViewMode = 'dashboard' | 'caseList' | 'caseDetail' | 'system';
 
@@ -124,6 +125,7 @@ const AppContent: React.FC = () => {
       case 'autoAllocation':
       case 'outsourcing':
       case 'reduction':
+      case 'extensionRule':
       case 'schedule':
       case 'account':
       case 'role':
@@ -260,6 +262,11 @@ const AppContent: React.FC = () => {
                       key: 'reduction',
                       icon: <DollarOutlined style={{ color: 'rgba(255, 255, 255, 0.5)' }} />,
                       label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>{t.reductionRule}</span>,
+                    },
+                    {
+                      key: 'extensionRule',
+                      icon: <CalendarOutlined style={{ color: 'rgba(255, 255, 255, 0.5)' }} />,
+                      label: <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>展期规则</span>,
                     },
                     {
                       key: 'schedule',

@@ -13,7 +13,7 @@ interface Provider {
 
 const initialProviders: Provider[] = [
   { id: 'SP001', name: 'Twilio SMS Gateway', type: 'SMS', status: 'active', templates: ['还款提醒短信'] },
-  { id: 'SP002', name: 'Infobip SMS', type: 'SMS', status: 'active', templates: ['逾期催收短信'] },
+  { id: 'SP002', name: 'Infobip', type: 'RCS', status: 'active', templates: ['逾期催收提醒'] },
   { id: 'SP003', name: 'WhatsApp Business API', type: 'WABA', status: 'active', templates: ['WABA还款提醒', 'WABA逾期通知'] },
   { id: 'SP004', name: 'SendGrid Email', type: 'Email', status: 'active', templates: ['还款提醒邮件'] },
   { id: 'SP005', name: 'Amazon SES', type: 'Email', status: 'inactive', templates: ['逾期通知邮件'] },

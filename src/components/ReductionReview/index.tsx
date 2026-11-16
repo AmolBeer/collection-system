@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Table, Button, Tag, Space, Modal, message, Select, Input, Form, Descriptions, Statistic, Row, Col, Divider, Timeline, Avatar, InputNumber } from 'antd';
+import { Card, Table, Button, Tag, Space, Modal, message, Select, Input, Form, Descriptions, Statistic, Row, Col, Divider, Timeline, Avatar, InputNumber, Image } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { 
-  CheckCircleOutlined, 
-  CloseCircleOutlined, 
+import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
   ClockCircleOutlined,
   UserOutlined,
   DollarOutlined,
@@ -16,6 +16,12 @@ const { TextArea } = Input;
 
 // 减免申请状态
 type ReductionStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+
+interface ReductionImage {
+  id: string;
+  name: string;
+  url: string;
+}
 
 interface BillSubjectDetail {
   principal: number;
@@ -73,6 +79,7 @@ interface ReductionApplication {
   completedTime?: string;
   billDetails: BillDetail[];
   settlementRecords?: SettlementRecord[];
+  images?: ReductionImage[];
 }
 
 const mockApplications: ReductionApplication[] = [
@@ -95,8 +102,12 @@ const mockApplications: ReductionApplication[] = [
     maxReduction: 900000,
     finalPaymentAmount: 6400000,
     status: 'pending',
+    images: [
+      { id: 'img1', name: 'Termination Letter', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=employment%20termination%20letter%20official%20document%20Indonesia&image_size=landscape_4_3' },
+      { id: 'img2', name: 'Bank Statement', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=Indonesian%20bank%20statement%20showing%20no%20income&image_size=landscape_4_3' },
+    ],
     billDetails: [
-      { 
+      {
         billNumber: 'INV-2024-0515',
         installments: '第3期',
         originalAmount: 3600000,
@@ -106,7 +117,7 @@ const mockApplications: ReductionApplication[] = [
         finalAmount: 3300000,
         finalSubjects: { principal: 3000000, interest: 300000, penalty: 0 }
       },
-      { 
+      {
         billNumber: 'INV-2024-0615',
         installments: '第4期',
         originalAmount: 3300000,
@@ -141,6 +152,11 @@ const mockApplications: ReductionApplication[] = [
     reviewer: 'Ahmad Rizal (Supervisor)',
     reviewComment: '客户承诺周末还款，批准减免20万',
     paymentCode: 'VA-20240512-001',
+    images: [
+      { id: 'img3', name: 'Medical Bill', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=hospital%20medical%20bill%20invoice%20Indonesian%20healthcare&image_size=landscape_4_3' },
+      { id: 'img4', name: 'Doctor Note', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=doctor%20medical%20certificate%20sick%20note%20hospital&image_size=portrait_4_3' },
+      { id: 'img5', name: 'Hospital Admission', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=hospital%20admission%20form%20patient%20registration&image_size=landscape_4_3' },
+    ],
     billDetails: [
       { 
         billNumber: 'INV-2024-0701',
@@ -179,6 +195,9 @@ const mockApplications: ReductionApplication[] = [
     paymentCode: 'VA-20240506-001',
     paymentTime: '06 May 2024, 10:30',
     completedTime: '06 May 2024, 10:35',
+    images: [
+      { id: 'img6', name: 'Complaint Letter', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=formal%20complaint%20letter%20document%20customer%20service&image_size=landscape_4_3' },
+    ],
     billDetails: [
       { 
         billNumber: 'INV-2024-0301',
@@ -674,6 +693,30 @@ const ReductionReview: React.FC = () => {
               </Descriptions.Item>
             </Descriptions>
 
+            {/* 附件图片 */}
+            <Divider>{t.attachmentImages}</Divider>
+            {selectedApplication.images && selectedApplication.images.length > 0 ? (
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                {selectedApplication.images.map((img) => (
+                  <div key={img.id} style={{ textAlign: 'center' }}>
+                    <Image
+                      src={img.url}
+                      alt={img.name}
+                      width={120}
+                      height={90}
+                      style={{ objectFit: 'cover', borderRadius: '6px', border: '1px solid #e5e7eb' }}
+                      preview={{ mask: <EyeOutlined /> }}
+                    />
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {img.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '16px' }}>{t.noImages}</div>
+            )}
+
             <Divider>{t.billDetails}</Divider>
 
             <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1009,6 +1052,30 @@ const ReductionReview: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {/* 附件图片 */}
+            {selectedApplication.images && selectedApplication.images.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>{t.attachmentImages}</label>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {selectedApplication.images.map((img) => (
+                    <div key={img.id} style={{ textAlign: 'center' }}>
+                      <Image
+                        src={img.url}
+                        alt={img.name}
+                        width={120}
+                        height={90}
+                        style={{ objectFit: 'cover', borderRadius: '6px', border: '1px solid #e5e7eb' }}
+                        preview={{ mask: <EyeOutlined /> }}
+                      />
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {img.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {reviewAction === 'approve' ? (
               <Form form={form} layout="vertical">

@@ -7,6 +7,14 @@ import dayjs, { Dayjs } from 'dayjs';
 type SendMethod = 'SMS' | 'Email' | 'RCS' | 'IVR' | 'AI' | 'WABA' | 'APP Push';
 type TaskStatus = 'enabled' | 'disabled';
 
+// 策略类发送方式：在三方后台配置策略ID，任务由 XXjob 调度执行
+const isStrategyMethod = (m: SendMethod) => m === 'AI' || m === 'RCS';
+
+interface RandomConfig {
+  position: number; // 第几位
+  digits: string[]; // 允许作为随机数的数字（0-9）
+}
+
 interface SendTask {
   id: string;
   name: string;
@@ -18,9 +26,10 @@ interface SendTask {
   scheduledTime: string;
   status: TaskStatus;
   createdAt: string;
-  // AI 特有
+  // 策略类任务特有（AI / RCS）
   dayType?: 'workday' | 'nonworkday';
   products?: string[];
+  randomConfig?: RandomConfig;
 }
 
 interface TemplateOption {
@@ -62,6 +71,9 @@ const dayTypeLabels: Record<string, string> = {
   nonworkday: '非工作日',
 };
 
+// 随机数可选数字 0-9
+const digitOptions = Array.from({ length: 10 }, (_, i) => ({ value: String(i), label: String(i) }));
+
 const templatesByType: Record<SendMethod, TemplateOption[]> = {
   SMS: [
     { id: 'TP001', name: '还款提醒短信', type: 'SMS', providerId: 'SP001', providerName: 'Twilio SMS Gateway' },
@@ -73,6 +85,7 @@ const templatesByType: Record<SendMethod, TemplateOption[]> = {
   ],
   RCS: [
     { id: 'TP007', name: 'RCS还款提醒', type: 'RCS', providerId: 'SP006', providerName: 'Google RBM' },
+    { id: 'TP013', name: 'RCS逾期催收', type: 'RCS', providerId: 'SP006', providerName: 'Google RBM' },
   ],
   IVR: [
     { id: 'TP008', name: 'IVR逾期催收话术', type: 'IVR', providerId: 'SP007', providerName: 'Twilio Voice' },
@@ -118,11 +131,11 @@ const generateMockTasks = (method: SendMethod): SendTask[] => {
     const aud = audienceOptions[i % audienceOptions.length];
     const status = statuses[i % statuses.length];
 
-    // AI 任务支持多模板
-    const isAI = method === 'AI';
+    // 策略类任务（AI/RCS）支持多模板
+    const isStrategy = isStrategyMethod(method);
     let templateName = tpl.name;
     let templateIds: string[] | undefined;
-    if (isAI) {
+    if (isStrategy) {
       const selectedTpls = [tpl, templates[(i + 1) % templates.length]];
       templateIds = selectedTpls.map(t => t.id);
       templateName = selectedTpls.map(t => t.name).join('、');
@@ -139,8 +152,9 @@ const generateMockTasks = (method: SendMethod): SendTask[] => {
       scheduledTime: dayjs().subtract(i, 'day').format('YYYY-MM-DD HH:mm:ss'),
       status,
       createdAt: dayjs().subtract(i, 'day').format('YYYY-MM-DD HH:mm:ss'),
-      dayType: isAI ? dayTypes[i % dayTypes.length] : undefined,
-      products: isAI ? [productValues[i % productValues.length], productValues[(i + 2) % productValues.length]] : undefined,
+      dayType: isStrategy ? dayTypes[i % dayTypes.length] : undefined,
+      products: isStrategy ? [productValues[i % productValues.length], productValues[(i + 2) % productValues.length]] : undefined,
+      randomConfig: isStrategy ? { position: (i % 4) + 1, digits: ['1', '3', '5', '7', '9'] } : undefined,
     });
   }
   return tasks;
@@ -186,8 +200,8 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
   };
 
   const handleTemplateChange = (value: string | string[]) => {
-    if (method === 'AI' && Array.isArray(value)) {
-      // AI 多选：根据所选模板推导出对应服务商
+    if (isStrategyMethod(method) && Array.isArray(value)) {
+      // 策略类多选：根据所选模板推导出对应服务商
       const selected = templates.filter(tp => value.includes(tp.id));
       setSelectedTemplates(selected);
       setSelectedTemplate(selected.length > 0 ? selected[0] : null);
@@ -219,7 +233,8 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
     let providerName = '';
     let templateIds: string[] | undefined;
 
-    if (method === 'AI' && Array.isArray(values.templateId)) {
+    const isStrategy = isStrategyMethod(method);
+    if (isStrategy && Array.isArray(values.templateId)) {
       const selected = templates.filter(tp => values.templateId.includes(tp.id));
       templateIds = values.templateId;
       templateName = selected.map(s => s.name).join('、');
@@ -238,11 +253,16 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
       audience: audienceLabel,
       audienceCount: totalCount,
       providerName,
-      scheduledTime: values.scheduledTime ? (values.scheduledTime as Dayjs).format('YYYY-MM-DD HH:mm:ss') : dayjs().format('YYYY-MM-DD HH:mm:ss'),
+      scheduledTime: isStrategy
+        ? dayjs().format('YYYY-MM-DD HH:mm:ss')
+        : (values.scheduledTime ? (values.scheduledTime as Dayjs).format('YYYY-MM-DD HH:mm:ss') : dayjs().format('YYYY-MM-DD HH:mm:ss')),
       status: 'enabled',
       createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-      dayType: method === 'AI' ? (values.dayType || 'workday') : undefined,
-      products: method === 'AI' ? (values.products || []) : undefined,
+      dayType: isStrategy ? (values.dayType || 'workday') : undefined,
+      products: isStrategy ? (values.products || []) : undefined,
+      randomConfig: isStrategy && values.randomPosition
+        ? { position: values.randomPosition, digits: values.randomDigits || [] }
+        : undefined,
     };
   };
 
@@ -274,13 +294,17 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
     const matchedAudience = audienceOptions.filter(a => audienceLabels.includes(a.label)).map(a => a.value);
     fillValues.audience = matchedAudience.length > 0 ? matchedAudience : undefined;
 
-    if (method === 'AI' && task.templateIds && task.templateIds.length > 0) {
+    if (isStrategyMethod(method) && task.templateIds && task.templateIds.length > 0) {
       fillValues.templateId = task.templateIds;
       const selected = templates.filter(tp => task.templateIds!.includes(tp.id));
       setSelectedTemplates(selected);
       setSelectedTemplate(selected.length > 0 ? selected[0] : null);
       fillValues.dayType = task.dayType || 'workday';
       fillValues.products = task.products || [];
+      if (task.randomConfig) {
+        fillValues.randomPosition = task.randomConfig.position;
+        fillValues.randomDigits = task.randomConfig.digits;
+      }
     } else {
       const tpl = templates.find(tp => tp.name === task.templateName);
       fillValues.templateId = tpl?.id;
@@ -340,15 +364,20 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
       sorter: (a, b) => a.scheduledTime.localeCompare(b.scheduledTime),
       render: (t: string) => <span style={{ color: '#6b7280', fontSize: '13px' }}>{t}</span>,
     },
-    // AI 特有配置列
-    ...(method === 'AI' ? [{
-      title: 'AI配置', key: 'aiConfig', width: 200,
+    // 策略类任务特有配置列（AI/RCS）
+    ...(isStrategyMethod(method) ? [{
+      title: '策略配置', key: 'aiConfig', width: 240,
       render: (_: unknown, record: SendTask) => (
         <Space size={4} wrap>
           {record.dayType && <Tag color="blue" style={{ borderRadius: 4 }}>{dayTypeLabels[record.dayType]}</Tag>}
           {record.products && record.products.map(p => (
             <Tag key={p} color="geekblue" style={{ borderRadius: 4 }}>{p}</Tag>
           ))}
+          {record.randomConfig && record.randomConfig.digits.length > 0 && (
+            <Tag color="purple" style={{ borderRadius: 4 }}>
+              第{record.randomConfig.position}位随机[{record.randomConfig.digits.join(',')}]
+            </Tag>
+          )}
         </Space>
       ),
     }] : []),
@@ -455,10 +484,10 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
             <Input placeholder="请输入任务名称（可选）" style={{ borderRadius: 6 }} />
           </Form.Item>
           <Form.Item name="templateId"
-            label={method === 'AI' ? '发送模板（可多选）' : '发送模板'}
+            label={isStrategyMethod(method) ? '发送模板（可多选）' : '发送模板'}
             rules={[{ required: true, message: '请选择模板' }]}>
-            {method === 'AI' ? (
-              <Select mode="multiple" placeholder="选择AI策略模板（可多选）" style={{ borderRadius: 6 }}
+            {isStrategyMethod(method) ? (
+              <Select mode="multiple" placeholder={`选择${method}策略模板（可多选）`} style={{ borderRadius: 6 }}
                 onChange={handleTemplateChange}
                 options={templates.map(t => ({ value: t.id, label: `${t.name} (${t.id})` }))}
                 optionFilterProp="label"
@@ -471,8 +500,8 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
             )}
           </Form.Item>
 
-          {/* AI 特有配置 */}
-          {method === 'AI' && (
+          {/* 策略类任务特有配置（AI/RCS） */}
+          {isStrategyMethod(method) && (
             <>
               <Form.Item name="dayType" label="执行日期"
                 rules={[{ required: true, message: '请选择执行日期' }]}>
@@ -488,10 +517,28 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
                   optionFilterProp="label"
                 />
               </Form.Item>
+              {/* 随机数配置 */}
+              <Form.Item label="随机数配置"
+                extra={<span style={{ fontSize: '12px', color: '#9ca3af' }}>指定电话号码中第几位的数字使用随机数，并选择允许的数字范围</span>}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <Form.Item name="randomPosition" noStyle
+                    rules={[{ type: 'number', min: 1, message: '至少为1' }]}>
+                    <InputNumber min={1} max={11} placeholder="第几位" style={{ width: 120, borderRadius: 6 }}
+                      addonBefore="第" addonAfter="位" />
+                  </Form.Item>
+                  <Form.Item name="randomDigits" noStyle>
+                    <Select mode="multiple" placeholder="可选数字（0-9）" style={{ flex: 1, borderRadius: 6 }}
+                      options={digitOptions}
+                      optionFilterProp="label"
+                      maxTagCount="responsive"
+                    />
+                  </Form.Item>
+                </div>
+              </Form.Item>
             </>
           )}
 
-          {selectedTemplate && method !== 'AI' && (
+          {selectedTemplate && !isStrategyMethod(method) && (
             <div style={{ marginBottom: 16, padding: '10px 14px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ApiOutlined style={{ color: '#16a34a' }} />
@@ -501,14 +548,16 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
               </div>
             </div>
           )}
-          <Form.Item name="scheduledTime" label="定时发送（可选）"
-            extra={<span style={{ fontSize: '12px', color: '#9ca3af' }}>不选择则立即发送</span>}>
-            <DatePicker showTime format="YYYY-MM-DD HH:mm:ss"
-              disabledDate={(current: Dayjs) => !!current && current < dayjs().startOf('day')}
-              placeholder="选择定时发送时间"
-              style={{ width: '100%', borderRadius: 6 }}
-            />
-          </Form.Item>
+          {!isStrategyMethod(method) && (
+            <Form.Item name="scheduledTime" label="定时发送（可选）"
+              extra={<span style={{ fontSize: '12px', color: '#9ca3af' }}>不选择则立即发送</span>}>
+              <DatePicker showTime format="YYYY-MM-DD HH:mm:ss"
+                disabledDate={(current: Dayjs) => !!current && current < dayjs().startOf('day')}
+                placeholder="选择定时发送时间"
+                style={{ width: '100%', borderRadius: 6 }}
+              />
+            </Form.Item>
+          )}
           <Form.Item name="audience" label="选择客群"
             rules={[{ required: true, message: '请选择客群' }]}>
             <Select mode="multiple" placeholder="请选择目标客群（可多选）" style={{ borderRadius: 6 }} showSearch
@@ -561,14 +610,19 @@ const SendTaskList: React.FC<SendTaskListProps> = ({ method }) => {
               <div><div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: 4 }}>客群人数</div><div style={{ color: '#0d4f3c', fontWeight: 600 }}>{currentTask.audienceCount.toLocaleString()} 人</div></div>
               <div><div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: 4 }}>发送时间</div><div style={{ color: '#374151' }}>{currentTask.scheduledTime}</div></div>
             </div>
-            {method === 'AI' && (currentTask.dayType || currentTask.products?.length) && (
+            {isStrategyMethod(method) && (currentTask.dayType || currentTask.products?.length || currentTask.randomConfig) && (
               <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 }}>
-                <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: 8 }}>AI 任务配置</div>
+                <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: 8 }}>{method} 任务配置</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {currentTask.dayType && <Tag color="blue" style={{ borderRadius: 4 }}>执行日期：{dayTypeLabels[currentTask.dayType]}</Tag>}
                   {currentTask.products && currentTask.products.map(p => (
                     <Tag key={p} color="geekblue" style={{ borderRadius: 4 }}>产品：{p}</Tag>
                   ))}
+                  {currentTask.randomConfig && currentTask.randomConfig.digits.length > 0 && (
+                    <Tag color="purple" style={{ borderRadius: 4 }}>
+                      第{currentTask.randomConfig.position}位随机[{currentTask.randomConfig.digits.join(',')}]
+                    </Tag>
+                  )}
                 </div>
               </div>
             )}

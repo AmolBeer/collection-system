@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Table, Button, Tag, Space, Modal, message, Select, Input, Row, Col, Divider, Timeline, Avatar, Statistic } from 'antd';
+import { Card, Table, Button, Tag, Space, Modal, message, Select, Input, Row, Col, Divider, Timeline, Avatar, Statistic, Image } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  CheckCircleOutlined, 
-  CloseCircleOutlined, 
+  CheckCircleOutlined,
+  CloseCircleOutlined,
   ClockCircleOutlined,
   UserOutlined,
   DollarOutlined,
@@ -21,6 +21,12 @@ type WorkOrderType = 'reduction' | 'suspend' | 'coCollection';
 
 // 工单状态
 type WorkOrderStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+
+interface WorkOrderImage {
+  id: string;
+  name: string;
+  url: string;
+}
 
 // 工单详情接口
 interface WorkOrderDetail {
@@ -49,6 +55,7 @@ interface WorkOrderDetail {
   reviewer?: string;
   reviewComment?: string;
   completedTime?: string;
+  images?: WorkOrderImage[];
 }
 
 // 模拟工单数据
@@ -68,6 +75,10 @@ const mockWorkOrders: WorkOrderDetail[] = [
     totalAmount: 4400000,
     requestedAmount: 660000,
     approvedAmount: 0,
+    images: [
+      { id: 'wimg1', name: 'Termination Letter', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=employment%20termination%20letter%20official%20document%20Indonesia&image_size=landscape_4_3' },
+      { id: 'wimg2', name: 'Bank Statement', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=Indonesian%20bank%20statement%20showing%20no%20income&image_size=landscape_4_3' },
+    ],
   },
   {
     id: 'WO002',
@@ -86,6 +97,10 @@ const mockWorkOrders: WorkOrderDetail[] = [
     reviewTime: '08 May 2024, 16:45',
     reviewer: 'Ahmad Rizal (Supervisor)',
     reviewComment: '客户承诺周末还款，批准减免20万',
+    images: [
+      { id: 'wimg3', name: 'Medical Bill', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=hospital%20medical%20bill%20invoice%20Indonesian%20healthcare&image_size=landscape_4_3' },
+      { id: 'wimg4', name: 'Doctor Note', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=doctor%20medical%20certificate%20sick%20note%20hospital&image_size=portrait_4_3' },
+    ],
   },
   // 停催申请工单
   {
@@ -170,6 +185,9 @@ const mockWorkOrders: WorkOrderDetail[] = [
     reviewTime: '05 May 2024, 17:00',
     reviewer: 'Ahmad Rizal (Supervisor)',
     reviewComment: '驳回 - 申请全额减免不符合政策',
+    images: [
+      { id: 'wimg5', name: 'Request Letter', url: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=handwritten%20request%20letter%20document%20customer&image_size=landscape_4_3' },
+    ],
   },
 ];
 
@@ -654,6 +672,30 @@ const WorkOrderReview: React.FC = () => {
                   <p style={{ margin: 0, color: '#1f2937' }}>{selectedOrder.coCollectionReason}</p>
                 </div>
               )}
+
+              {/* 附件图片 */}
+              {selectedOrder.images && selectedOrder.images.length > 0 && (
+                <div style={{ paddingTop: '12px', borderTop: '1px solid #e5e7eb', marginTop: '12px' }}>
+                  <span style={{ color: '#6b7280', display: 'block', marginBottom: '8px' }}>{t.attachmentImages}:</span>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    {selectedOrder.images.map((img) => (
+                      <div key={img.id} style={{ textAlign: 'center' }}>
+                        <Image
+                          src={img.url}
+                          alt={img.name}
+                          width={120}
+                          height={90}
+                          style={{ objectFit: 'cover', borderRadius: '6px', border: '1px solid #e5e7eb' }}
+                          preview={{ mask: <EyeOutlined /> }}
+                        />
+                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {img.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 审核信息 */}
@@ -762,6 +804,30 @@ const WorkOrderReview: React.FC = () => {
                 {selectedOrder.reason}
               </p>
             </div>
+
+            {/* 附件图片 */}
+            {selectedOrder.images && selectedOrder.images.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>{t.attachmentImages}</label>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {selectedOrder.images.map((img) => (
+                    <div key={img.id} style={{ textAlign: 'center' }}>
+                      <Image
+                        src={img.url}
+                        alt={img.name}
+                        width={120}
+                        height={90}
+                        style={{ objectFit: 'cover', borderRadius: '6px', border: '1px solid #e5e7eb' }}
+                        preview={{ mask: <EyeOutlined /> }}
+                      />
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {img.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 减免金额输入（仅减免工单） */}
             {reviewAction === 'approve' && selectedOrder.type === 'reduction' && (

@@ -180,7 +180,12 @@ const CaseList: React.FC<{ onViewDetail: (caseId: string) => void; onSuspend: (c
       key: 'id',
       width: 140,
       render: (id: string) => (
-        <span style={{ color: '#0d4f3c', fontWeight: '500', fontSize: '13px' }}>{id}</span>
+        <a
+          onClick={() => onViewDetail(id)}
+          style={{ color: '#0d4f3c', fontWeight: '500', fontSize: '13px', cursor: 'pointer' }}
+        >
+          {id}
+        </a>
       ),
     },
     {

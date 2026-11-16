@@ -39,6 +39,10 @@ const initialRecords: SendRecord[] = [
   { id: '15', sendTime: '2026-05-20 10:00:00', sendMethod: '定时', channel: 'AI', providerName: 'AI Rudder', content: 'AI智能催收话术 - 非工作日外呼（CL01-CL03）', batchNumber: 'BATCH20260520100000007', result: 'Success', sendCount: 1240, failedCount: 15, successRate: 98.8, status: 'Sent' },
   { id: '16', sendTime: '2026-05-19 15:30:00', sendMethod: '手动', channel: 'AI', providerName: 'Dyna', content: 'AI智能催收话术-II - 紧急催收外呼（CL06-CL08）', batchNumber: 'BATCH20260519153000008', result: 'Failed', sendCount: 432, failedCount: 432, successRate: 0, status: 'Failed' },
   { id: '17', sendTime: '2026-05-18 16:00:00', sendMethod: '定时', channel: 'AI', providerName: 'AI Rudder', content: 'AI智能催收话术 - 失联客户预警外呼（CL04-CL05）', batchNumber: 'BATCH20260518160000009', result: 'Success', sendCount: 432, failedCount: 8, successRate: 98.1, status: 'Sent' },
+  { id: '18', sendTime: '2026-05-21 10:30:00', sendMethod: '定时', channel: 'RCS', providerName: 'Google RBM', content: 'RCS还款提醒（策略ID：RCS_STRATEGY_001，工作日，CL01-CL04）', batchNumber: 'BATCH20260521103000010', result: 'Success', sendCount: 2680, failedCount: 31, successRate: 98.8, status: 'Sent' },
+  { id: '19', sendTime: '2026-05-21 15:00:00', sendMethod: '定时', channel: 'RCS', providerName: 'Google RBM', content: 'RCS逾期催收（策略ID：RCS_STRATEGY_002，非工作日，CL05-CL08）', batchNumber: 'BATCH20260521150000011', result: 'Partial', sendCount: 856, failedCount: 62, successRate: 92.8, status: 'Sent' },
+  { id: '20', sendTime: '2026-05-20 11:00:00', sendMethod: '定时', channel: 'RCS', providerName: 'Google RBM', content: 'RCS还款提醒（策略ID：RCS_STRATEGY_001，工作日，CL01-CL03）', batchNumber: 'BATCH20260520110000012', result: 'Failed', sendCount: 500, failedCount: 500, successRate: 0, status: 'Failed' },
+  { id: '21', sendTime: '2026-05-19 09:30:00', sendMethod: '手动', channel: 'RCS', providerName: 'Google RBM', content: 'RCS逾期催收（策略ID：RCS_STRATEGY_002，紧急补发，CL06-CL08）', batchNumber: 'BATCH20260519093000013', result: 'Success', sendCount: 320, failedCount: 5, successRate: 98.4, status: 'Sent' },
 ];
 
 const resultColorMap: Record<SendRecord['result'], string> = {
@@ -121,12 +125,6 @@ const SendRecords: React.FC = () => {
       render: (t: string) => <span style={{ color: '#374151', fontSize: '13px' }}>{t}</span>,
     },
     {
-      title: '触发方式', dataIndex: 'sendMethod', key: 'sendMethod', width: 100,
-      render: (m: string) => (
-        <Tag color={m === '定时' ? 'blue' : 'green'} style={{ borderRadius: 4 }}>{m}</Tag>
-      ),
-    },
-    {
       title: '发送方式', dataIndex: 'channel', key: 'channel', width: 110,
       render: (c: SendChannel) => (
         <Tag color={channelColorMap[c]} style={{ borderRadius: 4 }}>{c}</Tag>
@@ -135,10 +133,6 @@ const SendRecords: React.FC = () => {
     {
       title: '服务商', dataIndex: 'providerName', key: 'providerName', width: 160, ellipsis: true,
       render: (t?: string) => <span style={{ color: '#374151', fontSize: '13px' }}>{t || '-'}</span>,
-    },
-    {
-      title: '发送内容', dataIndex: 'content', key: 'content', width: 220, ellipsis: true,
-      render: (t: string) => <span style={{ color: '#374151', fontSize: '13px' }}>{t}</span>,
     },
     {
       title: '批次号', dataIndex: 'batchNumber', key: 'batchNumber', width: 260, ellipsis: true,
@@ -172,12 +166,6 @@ const SendRecords: React.FC = () => {
         <span style={{ color: r >= 95 ? '#22c55e' : r >= 80 ? '#f59e0b' : '#ef4444', fontWeight: 500 }}>
           {r}%
         </span>
-      ),
-    },
-    {
-      title: '状态', dataIndex: 'status', key: 'status', width: 80,
-      render: (s: string) => (
-        <Tag color={s === 'Sent' ? 'success' : 'error'} style={{ borderRadius: 4 }}>{s}</Tag>
       ),
     },
     {
@@ -232,7 +220,7 @@ const SendRecords: React.FC = () => {
       <Table columns={columns} dataSource={filtered} rowKey="id"
         pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50'], showTotal: (t) => `共 ${t} 条` }}
         size="middle"
-        scroll={{ x: 1560 }}
+        scroll={{ x: 1160 }}
       />
     </div>
   );

@@ -61,8 +61,11 @@ const methodColorMap: Record<string, string> = {
   AI: 'purple', WABA: 'green', 'APP Push': 'magenta',
 };
 
-// 需要选择服务商的类型
-const typesRequiringProvider: TemplateMethod[] = ['WABA', 'AI', 'IVR'];
+// 需要选择服务商的类型（策略类模板：AI / RCS 同IVR / WABA 一样必须绑定服务商）
+const typesRequiringProvider: TemplateMethod[] = ['WABA', 'AI', 'IVR', 'RCS'];
+
+// 策略类类型：在三方后台配置策略ID后回填，表单只填策略ID
+const strategyTypes: TemplateMethod[] = ['AI', 'RCS'];
 
 const generateMockTemplates = (method: TemplateMethod): Template[] => {
   const providers = providersByType[method];
@@ -86,13 +89,14 @@ const generateMockTemplates = (method: TemplateMethod): Template[] => {
       providerId: typesRequiringProvider.includes(method) ? provider.id : undefined,
       providerName: typesRequiringProvider.includes(method) ? provider.name : undefined,
       subject: method === 'Email' ? `${name} - 主题` : undefined,
-      content: method === 'SMS' || method === 'RCS' ? `【催收系统】您有一笔逾期款项，请尽快处理。` :
+      content: method === 'SMS' ? `【催收系统】您有一笔逾期款项，请尽快处理。` :
                method === 'Email' ? `尊敬的客户，您好：\n\n您有一笔逾期款项，请尽快还款。` :
                method === 'APP Push' ? '您有一笔逾期款项需要处理，点击查看详情' : '',
       pushName: method === 'APP Push' ? name : undefined,
       title: method === 'APP Push' ? '还款提醒' : undefined,
       ivrTemplateId: method === 'IVR' ? `IVR_${String(i + 1).padStart(4, '0')}` : undefined,
-      strategyId: method === 'AI' ? `AI_STRATEGY_${String(i + 1).padStart(3, '0')}` : undefined,
+      strategyId: method === 'AI' ? `AI_STRATEGY_${String(i + 1).padStart(3, '0')}` :
+                    method === 'RCS' ? `RCS_STRATEGY_${String(i + 1).padStart(3, '0')}` : undefined,
       status: 'active',
       createdAt: '2026-08-20 10:00:00',
       updatedAt: '2026-08-20 10:00:00',
@@ -226,11 +230,11 @@ const TemplateList: React.FC<TemplateListProps> = ({ method }) => {
       ),
     }] : []),
     {
-      title: method === 'IVR' ? 'IVR模板ID' : method === 'AI' ? '策略ID' : method === 'APP Push' ? 'Push Name' : '内容预览',
+      title: method === 'IVR' ? 'IVR模板ID' : strategyTypes.includes(method) ? '策略ID' : method === 'APP Push' ? 'Push Name' : '内容预览',
       key: 'preview', width: 220, ellipsis: true,
       render: (_: unknown, record: Template) => {
         if (method === 'IVR') return <code style={{ fontSize: '12px', color: '#0d4f3c', backgroundColor: '#f0fdf4', padding: '2px 6px', borderRadius: 4 }}>{record.ivrTemplateId}</code>;
-        if (method === 'AI') return <code style={{ fontSize: '12px', color: '#0d4f3c', backgroundColor: '#f0fdf4', padding: '2px 6px', borderRadius: 4 }}>{record.strategyId}</code>;
+        if (strategyTypes.includes(method)) return <code style={{ fontSize: '12px', color: '#7c3aed', backgroundColor: '#f5f3ff', padding: '2px 6px', borderRadius: 4 }}>{record.strategyId}</code>;
         if (method === 'APP Push') return <span style={{ fontSize: '13px', color: '#374151' }}>{record.pushName}</span>;
         if (method === 'Email') return <span style={{ fontSize: '13px', color: '#374151' }}>{record.subject}</span>;
         return <span style={{ fontSize: '13px', color: '#374151' }}>{record.content}</span>;
@@ -323,12 +327,13 @@ const TemplateList: React.FC<TemplateListProps> = ({ method }) => {
         );
         break;
       case 'RCS':
+      case 'AI':
         fields.push(
-          <Form.Item key="content" name="content" label="发送内容"
-            rules={[{ required: true, message: '请输入发送内容' }]}>
-            <Input.TextArea rows={4} maxLength={1000} showCount
-              placeholder="请输入RCS富媒体内容（支持变量：{name}、{amount}）"
-              style={{ borderRadius: 6 }} />
+          <Form.Item key="strategyId" name="strategyId" label="策略ID"
+            rules={[{ required: true, message: '请输入策略ID' }]}
+            extra={<span style={{ fontSize: '12px', color: '#9ca3af' }}>{method}策略在服务商后台配置后获取，回填到此</span>}>
+            <Input placeholder={method === 'RCS' ? '如：RCS_STRATEGY_001' : '如：AI_STRATEGY_001'}
+              style={{ borderRadius: 6, fontFamily: 'monospace' }} />
           </Form.Item>
         );
         break;
@@ -338,15 +343,6 @@ const TemplateList: React.FC<TemplateListProps> = ({ method }) => {
             rules={[{ required: true, message: '请输入IVR模板ID' }]}
             extra={<span style={{ fontSize: '12px', color: '#9ca3af' }}>IVR模板在三方服务商后台配置后获取</span>}>
             <Input placeholder="如：IVR_0001" style={{ borderRadius: 6 }} />
-          </Form.Item>
-        );
-        break;
-      case 'AI':
-        fields.push(
-          <Form.Item key="strategyId" name="strategyId" label="策略ID"
-            rules={[{ required: true, message: '请输入策略ID' }]}
-            extra={<span style={{ fontSize: '12px', color: '#9ca3af' }}>AI策略在服务商后台配置后获取</span>}>
-            <Input placeholder="如：AI_STRATEGY_001" style={{ borderRadius: 6 }} />
           </Form.Item>
         );
         break;

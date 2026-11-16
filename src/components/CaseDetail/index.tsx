@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import dayjs from 'dayjs';
 import { 
   Card, 
   Tabs, 
@@ -42,6 +43,7 @@ import {
 import { useLanguage } from '../../i18n/LanguageContext';
 import { ReductionRule, ReductionType, SettlementResult } from '../../types';
 import { findMatchingRule, calculateMaxReduction, allocateReduction, settlePayment } from '../../utils/reductionCalc';
+import { findExtensionRule, getOverdueStageByDays, getProductByLoanType, DEFAULT_EXTENSION_DAYS } from '../../data/extensionRules';
 
 // 银行logo映射
 const bankLogos: Record<string, string> = {
@@ -87,6 +89,7 @@ interface VAInfo {
   bank?: string;
   vaNumber: string;
   status: 'active' | 'expired' | 'used';
+  purpose?: 'extension'; // 展期还款码
   createdAt: string;
   expiresAt: string;
 }
@@ -330,14 +333,14 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
   ];
 
   // 账单数据 - 模拟多笔订单，涵盖所有展期状态组合
-  const bills: Bill[] = [
+  const [bills, setBills] = useState<Bill[]>(() => [
     // 订单1: ORD001 (6期) - 展期中 + 已展期3次
     { id: 'B001', orderId: 'ORD001', billNumber: 'INV-2024-0115', installments: 'Installment 1', dueDate: '15 Jan 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000, extensionCount: 3, extensionStatus: 'extending' },
     { id: 'B002', orderId: 'ORD001', billNumber: 'INV-2024-0215', installments: 'Installment 2', dueDate: '15 Feb 2024', amount: 2500000, paidAmount: 2500000, status: 'paid', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
-    { id: 'B003', orderId: 'ORD001', billNumber: 'INV-2024-0315', installments: 'Installment 3', dueDate: '15 Mar 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
-    { id: 'B004', orderId: 'ORD001', billNumber: 'INV-2024-0415', installments: 'Installment 4', dueDate: '15 Apr 2024', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
-    { id: 'B005', orderId: 'ORD001', billNumber: 'INV-2024-0515', installments: 'Installment 5', dueDate: '15 May 2024', amount: 2800000, paidAmount: 0, status: 'overdue', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
-    { id: 'B006', orderId: 'ORD001', billNumber: 'INV-2024-0615', installments: 'Installment 6', dueDate: '15 Jun 2024', amount: 2800000, paidAmount: 0, status: 'unpaid', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
+    { id: 'B003', orderId: 'ORD001', billNumber: 'INV-2024-0315', installments: 'Installment 3', dueDate: '15 Sep 2026', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B004', orderId: 'ORD001', billNumber: 'INV-2024-0415', installments: 'Installment 4', dueDate: '15 Oct 2026', amount: 2500000, paidAmount: 0, status: 'overdue', principal: 2000000, interest: 300000, serviceFee: 150000, penalty: 50000 },
+    { id: 'B005', orderId: 'ORD001', billNumber: 'INV-2024-0515', installments: 'Installment 5', dueDate: '15 Nov 2026', amount: 2800000, paidAmount: 0, status: 'overdue', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
+    { id: 'B006', orderId: 'ORD001', billNumber: 'INV-2024-0615', installments: 'Installment 6', dueDate: '15 Dec 2026', amount: 2800000, paidAmount: 0, status: 'unpaid', principal: 2200000, interest: 350000, serviceFee: 180000, penalty: 70000 },
     
     // 订单2: ORD002 (6期) - 展期申请中 + 已展期2次
     { id: 'B007', orderId: 'ORD002', billNumber: 'INV-2024-0701', installments: 'Installment 1', dueDate: '01 Jul 2024', amount: 3000000, paidAmount: 0, status: 'overdue', principal: 2400000, interest: 360000, serviceFee: 180000, penalty: 60000, extensionCount: 2, extensionStatus: 'pending' },
@@ -365,14 +368,109 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     // 订单6: ORD006 (2期) - 无展期状态（普通订单，无标签）
     { id: 'B022', orderId: 'ORD006', billNumber: 'INV-2024-1010', installments: 'Installment 1', dueDate: '10 Oct 2024', amount: 1200000, paidAmount: 0, status: 'overdue', principal: 1000000, interest: 150000, serviceFee: 75000, penalty: 25000 },
     { id: 'B023', orderId: 'ORD006', billNumber: 'INV-2024-1110', installments: 'Installment 2', dueDate: '10 Nov 2024', amount: 1200000, paidAmount: 0, status: 'unpaid', principal: 1000000, interest: 150000, serviceFee: 75000, penalty: 25000 },
-  ];
+  ]);
 
   // VA码数据
-  const vaList: VAInfo[] = [
-    { id: 'VA001', billIds: ['B001'], amount: 2200000, channel: 'VA', bank: 'BNI', vaNumber: '8881234567890', status: 'active', createdAt: '10 May 2024', expiresAt: '10 Jun 2024' },
+  const [vaList, setVaList] = useState<VAInfo[]>([
+    { id: 'VA001', billIds: ['B001'], amount: 2200000, channel: 'VA', bank: 'BNI', vaNumber: '8881234567890', status: 'active', purpose: 'extension', createdAt: '10 May 2024', expiresAt: '10 Jun 2024' },
     { id: 'VA002', billIds: ['B002'], amount: 2200000, channel: 'Alfamart', vaNumber: 'ALF-20240510-001', status: 'active', createdAt: '10 May 2024', expiresAt: '10 Jun 2024' },
     { id: 'VA003', billIds: ['B001'], amount: 2200000, channel: 'VA', bank: 'Mandiri', vaNumber: '9990987654321', status: 'used', createdAt: '05 May 2024', expiresAt: '05 Jun 2024' },
-  ];
+  ]);
+
+  // 展期申请记录类型
+  type ExtensionRecordStatus = 'pending_confirm' | 'confirmed' | 'expired' | 'cancelled';
+
+  interface ExtensionHistoryRecord {
+    id: string;
+    orderId: string;
+    applyTime: string;
+    reason: string;
+    originalDue: string;
+    newDue: string;
+    feeAmount: number;
+    validityDays: number;
+    status: ExtensionRecordStatus;
+    confirmedTime?: string;
+    operator?: string;
+  }
+
+  // 展期申请记录（覆盖案件下所有订单的历史）
+  const [extensionHistory, setExtensionHistory] = useState<ExtensionHistoryRecord[]>([
+    {
+      id: 'EXT001',
+      orderId: 'ORD001',
+      applyTime: '12 Apr 2026, 10:30',
+      reason: '资金周转困难',
+      originalDue: '15 Apr 2026',
+      newDue: '30 Apr 2026',
+      feeAmount: 250000,
+      validityDays: 7,
+      status: 'confirmed',
+      confirmedTime: '13 Apr 2026, 09:20',
+      operator: 'Dewi Anggraini',
+    },
+    {
+      id: 'EXT002',
+      orderId: 'ORD001',
+      applyTime: '02 Jun 2026, 14:15',
+      reason: '短期回款延迟',
+      originalDue: '15 Jun 2026',
+      newDue: '30 Jun 2026',
+      feeAmount: 280000,
+      validityDays: 7,
+      status: 'pending_confirm',
+      operator: 'Dewi Anggraini',
+    },
+    {
+      id: 'EXT003',
+      orderId: 'ORD002',
+      applyTime: '20 Mar 2026, 11:00',
+      reason: '资金周转困难',
+      originalDue: '01 Apr 2026',
+      newDue: '16 Apr 2026',
+      feeAmount: 350000,
+      validityDays: 5,
+      status: 'expired',
+      operator: 'Budi Santoso',
+    },
+    {
+      id: 'EXT004',
+      orderId: 'ORD003',
+      applyTime: '15 Feb 2026, 16:40',
+      reason: '其他',
+      originalDue: '15 Mar 2026',
+      newDue: '30 Mar 2026',
+      feeAmount: 180000,
+      validityDays: 14,
+      status: 'confirmed',
+      confirmedTime: '16 Feb 2026, 08:30',
+      operator: 'Siti Aminah',
+    },
+    {
+      id: 'EXT005',
+      orderId: 'ORD004',
+      applyTime: '25 Jan 2026, 09:50',
+      reason: '短期回款延迟',
+      originalDue: '20 Feb 2026',
+      newDue: '07 Mar 2026',
+      feeAmount: 160000,
+      validityDays: 7,
+      status: 'cancelled',
+      operator: 'Rudi Hartono',
+    },
+    {
+      id: 'EXT006',
+      orderId: 'ORD005',
+      applyTime: '08 Nov 2026, 13:25',
+      reason: '资金周转困难',
+      originalDue: '05 Dec 2026',
+      newDue: '20 Dec 2026',
+      feeAmount: 150000,
+      validityDays: 5,
+      status: 'pending_confirm',
+      operator: 'Dewi Anggraini',
+    },
+  ]);
 
   // 警告信数据
   const warningLetters: WarningLetter[] = [
@@ -532,6 +630,15 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
   const [reductionModalVisible, setReductionModalVisible] = useState(false);
   const [previewLetterUrl, setPreviewLetterUrl] = useState<string | null>(null);
   const [addContactModalVisible, setAddContactModalVisible] = useState(false);
+
+  // 展期流程
+  const [extensionModalVisible, setExtensionModalVisible] = useState(false);
+  const [extensionReason, setExtensionReason] = useState<string>('');
+  const [extensionRemark, setExtensionRemark] = useState<string>('');
+  const [extensionCreatedVA, setExtensionCreatedVA] = useState<VAInfo | null>(null);
+  const [extensionAgreed, setExtensionAgreed] = useState<boolean>(true);
+  // 提交后等待用户在 APP 端确认展期合同
+  const [extensionWaitingConfirm, setExtensionWaitingConfirm] = useState<boolean>(false);
   
   // 订单折叠状态管理
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set(['ORD001'])); // 默认展开第一个订单
@@ -678,6 +785,212 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     setSelectedBills([]);
     setSelectedBank('');
   }, [selectedBills, bills, selectedChannel, selectedBank, selectedBillsTotal]);
+
+  // 展期原因选项（初期固定选项）
+  const extensionReasons = [
+    { value: 'funding', label: '资金周转困难' },
+    { value: 'delay', label: '短期回款延迟' },
+    { value: 'other', label: '其他' },
+  ];
+
+  // 展期费用与还款计划试算：按产品+逾期阶段匹配展期规则的比例
+  const extensionTrial = useMemo(() => {
+    const selectedOrders = Array.from(new Set(
+      selectedBills.map(id => bills.find(b => b.id === id)?.orderId).filter(Boolean)
+    )) as string[];
+    const targetOrderId = selectedOrders.length === 1
+      ? selectedOrders[0]
+      : bills.find(b => b.status === 'overdue')?.orderId;
+
+    // 展期范围：订单下所有未结清账单
+    const targetBills = bills.filter(b => b.orderId === targetOrderId && b.status !== 'paid');
+
+    const principalBase = targetBills.reduce((sum, b) => sum + (b.principal || 0), 0);
+    const interestBase = targetBills.reduce((sum, b) => sum + (b.interest || 0), 0);
+    const penaltyBase = targetBills.reduce((sum, b) => sum + (b.penalty || 0), 0);
+
+    const product = getProductByLoanType(caseSummary.loanType);
+    const stage = getOverdueStageByDays(caseSummary.daysPastDue);
+    const rule = findExtensionRule(product, stage);
+    const ratio = rule?.feeRatio ?? { principal: 0, interest: 0, penalty: 0 };
+
+    const rows = [
+      { key: 'principal', label: '剩余本金', base: principalBase, ratio: ratio.principal },
+      { key: 'interest', label: '当前利息', base: interestBase, ratio: ratio.interest },
+      { key: 'penalty', label: '当前罚息', base: penaltyBase, ratio: ratio.penalty },
+    ].map(row => ({ ...row, fee: Math.round((row.base * row.ratio) / 100) }));
+
+    const total = rows.reduce((sum, row) => sum + row.fee, 0);
+
+    // 展期后还款计划：当前账单顺延至申请日 + 规则配置的展期天数，后续账单按原期限结构整体平移
+    const parseDue = (value: string) => {
+      const parsed = dayjs(value, 'DD MMM YYYY');
+      return parsed.isValid() ? parsed : dayjs(value);
+    };
+    const sortedBills = [...targetBills].sort((a, b) => parseDue(a.dueDate).valueOf() - parseDue(b.dueDate).valueOf());
+    const applyDate = dayjs();
+    const extensionDays = rule?.extensionDays ?? DEFAULT_EXTENSION_DAYS;
+    const newFirstDue = applyDate.add(extensionDays, 'day');
+    const shiftDays = sortedBills.length > 0
+      ? newFirstDue.startOf('day').diff(parseDue(sortedBills[0].dueDate).startOf('day'), 'day')
+      : 0;
+
+    const plan = sortedBills.map((bill, index) => {
+      const newDue = parseDue(bill.dueDate).add(shiftDays, 'day');
+      return {
+        key: bill.id,
+        index: index + 1,
+        billNumber: bill.billNumber,
+        originalDue: bill.dueDate,
+        newDueDate: newDue.format('DD MMM YYYY'),
+        newDueRaw: newDue.format('YYYY-MM-DD'),
+        principal: bill.principal || 0,
+        interest: bill.interest || 0,
+        penalty: bill.penalty || 0,
+        amount: bill.amount,
+        shiftDays,
+        isFeeBill: false,
+      };
+    });
+
+    // 展期费账单（剩余本金 × 费率 + 逾期罚息）
+    plan.push({
+      key: 'extension_fee',
+      index: plan.length + 1,
+      billNumber: `EXT-FEE-${applyDate.format('YYYYMMDD')}`,
+      originalDue: '-',
+      newDueDate: newFirstDue.format('DD MMM YYYY'),
+      newDueRaw: newFirstDue.format('YYYY-MM-DD'),
+      principal: 0,
+      interest: 0,
+      penalty: 0,
+      amount: total,
+      shiftDays: 0,
+      isFeeBill: true,
+    });
+
+    return {
+      targetOrderId,
+      targetBillIds: targetBills.map(b => b.id),
+      product,
+      stage,
+      rule,
+      rows,
+      total,
+      extensionDays,
+      shiftDays,
+      plan,
+    };
+    // extensionModalVisible 用于打开弹框时读取最新的展期规则
+  }, [selectedBills, bills, caseSummary, extensionModalVisible]);
+
+  // 提交展期申请：校验案件状态与适用规则 -> 等待用户在 APP 端确认
+  const handleSubmitExtension = useCallback(() => {
+    if (!extensionReason) {
+      message.error('请选择展期原因');
+      return;
+    }
+    if (!extensionAgreed) {
+      message.error('请先确认已与用户沟通并取得用户对展期方案的确认');
+      return;
+    }
+
+    // 二次校验案件状态与适用规则
+    const product = getProductByLoanType(caseSummary.loanType);
+    const stage = getOverdueStageByDays(caseSummary.daysPastDue);
+    const currentRule = findExtensionRule(product, stage);
+    if (!currentRule) {
+      message.error('案件当前状态不符合展期条件：未匹配到适用的展期规则');
+      return;
+    }
+
+    const selectedOrders = Array.from(new Set(
+      selectedBills.map(id => bills.find(b => b.id === id)?.orderId).filter(Boolean)
+    )) as string[];
+    if (selectedOrders.length > 1) {
+      message.error('不允许跨订单申请展期，请只选择同一订单的账单');
+      return;
+    }
+
+    const { targetOrderId, targetBillIds } = extensionTrial;
+    if (!targetOrderId) {
+      message.error('案件当前状态不符合展期条件：没有可展期的订单');
+      return;
+    }
+    if (targetBillIds.length === 0) {
+      message.error('案件当前状态不符合展期条件：该订单已结清');
+      return;
+    }
+
+    setBills(prev => prev.map(b =>
+      b.id === targetBillIds[0] ? { ...b, extensionStatus: 'pending' } : b
+    ));
+    setExtensionWaitingConfirm(true);
+    message.success('展期申请已提交，用户可在 APP 端确认展期合同与金额');
+  }, [extensionReason, extensionAgreed, extensionTrial, selectedBills, bills, caseSummary]);
+
+  // 用户在 APP 端确认展期合同后：调整账单计划、生成展期费账单与还款码并发送通知
+  const handleUserConfirmExtension = useCallback(() => {
+    const { targetBillIds, targetOrderId, total, plan, rule } = extensionTrial;
+    const today = new Date();
+    const validityDays = rule?.validityDays ?? 7;
+    const expireDate = new Date(today.getTime() + validityDays * 24 * 60 * 60 * 1000);
+    const newVA: VAInfo = {
+      id: `VA${Date.now()}`,
+      billIds: targetBillIds,
+      amount: total,
+      channel: 'VA',
+      bank: 'BNI',
+      vaNumber: `888${String(Date.now()).slice(-10)}`,
+      status: 'active',
+      purpose: 'extension',
+      createdAt: today.toISOString().slice(0, 10),
+      expiresAt: expireDate.toISOString().slice(0, 10),
+    };
+
+    const dueMap = new Map(
+      plan.filter(item => !item.isFeeBill).map(item => [item.key, item.newDueDate])
+    );
+    const feeBill = plan.find(item => item.isFeeBill);
+
+    setVaList(prev => [newVA, ...prev]);
+    setBills(prev => {
+      const adjusted = prev.map(b => {
+        if (dueMap.has(b.id)) {
+          return {
+            ...b,
+            dueDate: dueMap.get(b.id) as string,
+            extensionStatus: b.id === targetBillIds[0] ? 'extending' : b.extensionStatus,
+          };
+        }
+        return b;
+      });
+      if (!feeBill || !targetOrderId) return adjusted;
+      // 生成展期费账单
+      return [
+        ...adjusted,
+        {
+          id: `BFEE${Date.now()}`,
+          orderId: targetOrderId,
+          billNumber: feeBill.billNumber,
+          installments: '展期费',
+          dueDate: feeBill.newDueDate,
+          amount: total,
+          paidAmount: 0,
+          status: 'unpaid',
+          principal: 0,
+          interest: 0,
+          serviceFee: total,
+          penalty: 0,
+        },
+      ];
+    });
+
+    setExtensionWaitingConfirm(false);
+    setExtensionCreatedVA(newVA);
+    message.success('用户已确认展期合同，账单已按展期计划调整');
+    message.success('展期费账单与展期还款码已生成，并已发送 App Push / WhatsApp 通知');
+  }, [extensionTrial]);
 
   // 申请减免
   const handleApplyReduction = useCallback(() => {
@@ -1385,7 +1698,144 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
         </div>
       ),
     },
-  ], [activities, caseSummary, images, paymentHistory, contacts, transferRecords]);
+    {
+      key: 'extension_history',
+      label: '展期记录',
+      children: (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', margin: 0 }}>展期申请历史</h3>
+              <span style={{ fontSize: '12px', color: '#6b7280' }}>该案件下所有订单的展期申请记录，包含申请原因、展期前后到期日、手续费与申请有效期</span>
+            </div>
+            <Tag color="blue">{extensionHistory.length} 条记录</Tag>
+          </div>
+
+          <Table
+            dataSource={extensionHistory}
+            rowKey="id"
+            size="middle"
+            pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50'] }}
+            scroll={{ x: 1280 }}
+            columns={[
+              {
+                title: '展期订单',
+                dataIndex: 'orderId',
+                key: 'orderId',
+                width: 110,
+                fixed: 'left',
+                render: (orderId: string) => (
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0d4f3c' }}>{orderId}</span>
+                ),
+              },
+              {
+                title: '申请时间',
+                dataIndex: 'applyTime',
+                key: 'applyTime',
+                width: 170,
+              },
+              {
+                title: '申请原因',
+                dataIndex: 'reason',
+                key: 'reason',
+                width: 140,
+                render: (reason: string) => {
+                  const reasonColor: Record<string, string> = {
+                    '资金周转困难': 'orange',
+                    '短期回款延迟': 'blue',
+                    '其他': 'default',
+                  };
+                  return <Tag color={reasonColor[reason] || 'default'}>{reason}</Tag>;
+                },
+              },
+              {
+                title: '展期前到期日',
+                dataIndex: 'originalDue',
+                key: 'originalDue',
+                width: 130,
+                render: (d: string) => <span style={{ color: '#dc2626' }}>{d}</span>,
+              },
+              {
+                title: '展期后到期日',
+                dataIndex: 'newDue',
+                key: 'newDue',
+                width: 130,
+                render: (d: string) => <span style={{ color: '#059669', fontWeight: 500 }}>{d}</span>,
+              },
+              {
+                title: '展期手续费',
+                dataIndex: 'feeAmount',
+                key: 'feeAmount',
+                width: 140,
+                align: 'right',
+                render: (amount: number) => (
+                  <span style={{ fontWeight: 600, color: '#1f2937' }}>{formatIDR(amount)} IDR</span>
+                ),
+              },
+              {
+                title: '展期有效期',
+                dataIndex: 'validityDays',
+                key: 'validityDays',
+                width: 120,
+                align: 'center',
+                render: (days: number, record: ExtensionHistoryRecord) => {
+                  const status = record.status;
+                  const expired = status === 'expired' || status === 'cancelled';
+                  const pendingConfirm = status === 'pending_confirm';
+                  if (expired) {
+                    return (
+                      <span style={{ color: '#9ca3af', textDecoration: 'line-through' }}>
+                        {days} 天
+                      </span>
+                    );
+                  }
+                  if (pendingConfirm) {
+                    return (
+                      <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                        {days} 天
+                      </span>
+                    );
+                  }
+                  return (
+                    <span>
+                      <span style={{ fontWeight: 600, color: '#0d4f3c' }}>{days}</span>
+                      <span style={{ color: '#6b7280', fontSize: 12 }}> 天</span>
+                    </span>
+                  );
+                },
+              },
+              {
+                title: '状态',
+                dataIndex: 'status',
+                key: 'status',
+                width: 130,
+                fixed: 'right',
+                render: (status: ExtensionRecordStatus) => {
+                  const config: Record<ExtensionRecordStatus, { color: string; label: string }> = {
+                    pending_confirm: { color: 'gold', label: '待用户 APP 确认' },
+                    confirmed: { color: 'green', label: '已确认' },
+                    expired: { color: 'default', label: '已过期' },
+                    cancelled: { color: 'red', label: '已取消' },
+                  };
+                  const c = config[status];
+                  return <Tag color={c.color}>{c.label}</Tag>;
+                },
+              },
+              {
+                title: '操作人',
+                dataIndex: 'operator',
+                key: 'operator',
+                width: 140,
+                render: (op: string | undefined) => (
+                  <span style={{ color: '#4b5563' }}>{op || '-'}</span>
+                ),
+              },
+            ]}
+          />
+        </div>
+      ),
+    },
+  ], [activities, caseSummary, images, paymentHistory, contacts, transferRecords, extensionHistory]);
 
   return (
     <div style={{ width: '100%', overflowX: 'auto' }}>
@@ -1651,6 +2101,23 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                 </Button>
               </>
             )}
+            {extensionTrial.rule && extensionTrial.targetBillIds.length > 0 && (
+              <Button 
+                type="primary" 
+                icon={<CalendarOutlined />}
+                onClick={() => {
+                  setExtensionCreatedVA(null);
+                  setExtensionWaitingConfirm(false);
+                  setExtensionReason('');
+                  setExtensionRemark('');
+                  setExtensionAgreed(true);
+                  setExtensionModalVisible(true);
+                }}
+                style={{ backgroundColor: '#0891b2', borderColor: '#0891b2' }}
+              >
+                Extension
+              </Button>
+            )}
             <Button 
               type="primary" 
               icon={<PlusOutlined />}
@@ -1865,6 +2332,15 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                 },
                 { title: 'Created At', dataIndex: 'createdAt', key: 'createdAt', width: '120px' },
                 { title: 'Expires At', dataIndex: 'expiresAt', key: 'expiresAt', width: '120px' },
+                {
+                  title: '用途',
+                  dataIndex: 'purpose',
+                  key: 'purpose',
+                  width: '110px',
+                  render: (purpose?: string) => purpose === 'extension'
+                    ? <Tag color="cyan">展期还款</Tag>
+                    : <Tag>普通还款</Tag>
+                },
               ]}
               pagination={false}
               size="middle"
@@ -2204,6 +2680,234 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
             />
           </div>
         </div>
+      </Modal>
+
+      {/* Extension Modal */}
+      <Modal
+        title="展期确认"
+        open={extensionModalVisible}
+        onCancel={() => setExtensionModalVisible(false)}
+        footer={extensionCreatedVA ? (
+          <Button type="primary" onClick={() => setExtensionModalVisible(false)}>完成</Button>
+        ) : extensionWaitingConfirm ? (
+          <Space>
+            <Button onClick={() => setExtensionModalVisible(false)}>关闭</Button>
+            <Button type="primary" onClick={handleUserConfirmExtension}>模拟用户 APP 确认</Button>
+          </Space>
+        ) : (
+          <Space>
+            <Button onClick={() => setExtensionModalVisible(false)}>取消</Button>
+            <Button type="primary" onClick={handleSubmitExtension}>确认提交</Button>
+          </Space>
+        )}
+        width={760}
+      >
+        {extensionCreatedVA ? (
+          <div>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#16a34a', marginBottom: 6 }}>
+                展期申请已提交
+              </div>
+              <div style={{ fontSize: 13, color: '#6b7280' }}>
+                系统已生成展期费还款码，并已通过 APP Push 与 WhatsApp 通知用户
+              </div>
+            </div>
+            <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: '#6b7280' }}>还款码（VA）</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0d4f3c' }}>{extensionCreatedVA.vaNumber}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: '#6b7280' }}>银行</span>
+                <span>{extensionCreatedVA.bank}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: '#6b7280' }}>展期费合计</span>
+                <span style={{ fontWeight: 600 }}>{formatIDR(extensionCreatedVA.amount)} IDR</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: '#6b7280' }}>有效期</span>
+                <span>{extensionCreatedVA.expiresAt}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#6b7280' }}>通知渠道</span>
+                <span>
+                  <Tag color="blue">APP Push</Tag>
+                  <Tag color="green">WhatsApp</Tag>
+                </span>
+              </div>
+            </div>
+            <div style={{ marginTop: 12, fontSize: 12, color: '#9ca3af' }}>
+              该还款码已标记为「展期还款」，可在账单信息下方的 VA 码列表中查看；用户还款成功后订单展期完成。
+            </div>
+          </div>
+        ) : extensionWaitingConfirm ? (
+          <div>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#0369a1', marginBottom: 6 }}>
+                展期申请已提交，等待用户确认
+              </div>
+              <div style={{ fontSize: 13, color: '#6b7280' }}>
+                用户可在 APP 端看到展期入口，确认展期合同与金额后生成展期还款码
+              </div>
+            </div>
+            <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: '#6b7280' }}>展期原因</span>
+                <span>{extensionReasons.find(r => r.value === extensionReason)?.label || '-'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: '#6b7280' }}>适用规则</span>
+                <span>{extensionTrial.rule?.name}（{extensionTrial.product} / {extensionTrial.stage}）</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: '#6b7280' }}>展期天数</span>
+                <span>
+                  <span style={{ fontWeight: 600, color: '#0d4f3c' }}>{extensionTrial.extensionDays}</span>
+                  <span style={{ color: '#6b7280' }}> 天</span>
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: '#6b7280' }}>展期费合计</span>
+                <span style={{ fontWeight: 600 }}>{formatIDR(extensionTrial.total)} IDR</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: '#6b7280' }}>申请有效期</span>
+                {extensionTrial.rule ? (
+                  <span>
+                    <span style={{ color: '#f59e0b', fontWeight: 600, marginRight: 6 }}>
+                      {extensionTrial.rule.validityDays} 天
+                    </span>
+                    <Tag color="orange" style={{ fontSize: 11 }}>APP 端开放至 {dayjs().add(extensionTrial.rule.validityDays, 'day').format('DD MMM YYYY')}</Tag>
+                  </span>
+                ) : (
+                  <span style={{ color: '#9ca3af' }}>-</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#6b7280' }}>申请状态</span>
+                <Tag color="gold">待用户 APP 确认</Tag>
+              </div>
+            </div>
+            <div style={{ marginTop: 12, fontSize: 12, color: '#9ca3af', lineHeight: '18px' }}>
+              用户确认展期合同后，系统生成展期还款码，并沿用现有流程发送 App Push 和 WhatsApp 通知；
+              还款码同步展示在 VA 码列表并标记为「展期还款」，用户还款成功后订单展期完成。
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                <span style={{ color: '#dc2626', marginRight: 4 }}>*</span>展期原因
+              </label>
+              <Select
+                placeholder="请选择展期原因"
+                value={extensionReason || undefined}
+                onChange={setExtensionReason}
+                options={extensionReasons}
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>补充说明（选填）</label>
+              <Input.TextArea
+                rows={2}
+                value={extensionRemark}
+                onChange={e => setExtensionRemark(e.target.value)}
+                placeholder="请输入补充说明"
+                maxLength={200}
+                showCount
+              />
+            </div>
+
+            <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 500 }}>费用试算</span>
+              <span style={{ fontSize: 12, color: '#6b7280' }}>
+                {extensionTrial.rule
+                  ? `匹配规则：${extensionTrial.rule.name}（${extensionTrial.product} / ${extensionTrial.stage}）`
+                  : `未匹配到展期规则（${extensionTrial.product} / ${extensionTrial.stage}），暂按 0% 试算`}
+              </span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16, fontSize: 13 }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f9fafb' }}>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>费用项</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>计算基数（IDR）</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>比例</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>金额（IDR）</th>
+                </tr>
+              </thead>
+              <tbody>
+                {extensionTrial.rows.map(row => (
+                  <tr key={row.key}>
+                    <td style={{ padding: '8px 12px', border: '1px solid #e5e7eb' }}>{row.label}</td>
+                    <td style={{ padding: '8px 12px', border: '1px solid #e5e7eb', textAlign: 'right' }}>{formatIDR(row.base)}</td>
+                    <td style={{ padding: '8px 12px', border: '1px solid #e5e7eb', textAlign: 'right' }}>{row.ratio}%</td>
+                    <td style={{ padding: '8px 12px', border: '1px solid #e5e7eb', textAlign: 'right' }}>{formatIDR(row.fee)}</td>
+                  </tr>
+                ))}
+                <tr style={{ backgroundColor: '#f0fdf4' }}>
+                  <td colSpan={3} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', fontWeight: 600 }}>费用合计</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #e5e7eb', textAlign: 'right', fontWeight: 600, color: '#0d4f3c' }}>{formatIDR(extensionTrial.total)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 500 }}>展期后还款计划试算</span>
+              <span style={{ fontSize: 12, color: '#6b7280' }}>
+                当前账单顺延至申请日 + 15 天，后续账单按原期限结构整体顺延 {extensionTrial.shiftDays} 天
+              </span>
+            </div>
+            <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: 6, marginBottom: 16 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f9fafb', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <th style={{ padding: '8px 10px', textAlign: 'center', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280', width: 50 }}>期次</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>账单</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'center', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>展期前到期日</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'center', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>展期后到期日</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>应还本金</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>应还利息</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>应还罚息</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right', border: '1px solid #e5e7eb', fontWeight: 500, color: '#6b7280' }}>账单金额</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {extensionTrial.plan.map(item => (
+                    <tr key={item.key} style={item.isFeeBill ? { backgroundColor: '#fffbeb' } : undefined}>
+                      <td style={{ padding: '8px 10px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{item.index}</td>
+                      <td style={{ padding: '8px 10px', border: '1px solid #e5e7eb' }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{item.billNumber}</span>
+                        {item.isFeeBill && <Tag color="gold" style={{ marginLeft: 6 }}>展期费</Tag>}
+                      </td>
+                      <td style={{ padding: '8px 10px', border: '1px solid #e5e7eb', textAlign: 'center', color: '#9ca3af', textDecoration: item.isFeeBill ? 'none' : 'line-through' }}>
+                        {item.originalDue}
+                      </td>
+                      <td style={{ padding: '8px 10px', border: '1px solid #e5e7eb', textAlign: 'center', fontWeight: 600, color: '#0d4f3c' }}>
+                        {item.newDueDate}
+                      </td>
+                      <td style={{ padding: '8px 10px', border: '1px solid #e5e7eb', textAlign: 'right' }}>{formatIDR(item.principal)}</td>
+                      <td style={{ padding: '8px 10px', border: '1px solid #e5e7eb', textAlign: 'right' }}>{formatIDR(item.interest)}</td>
+                      <td style={{ padding: '8px 10px', border: '1px solid #e5e7eb', textAlign: 'right' }}>{item.isFeeBill ? '—' : formatIDR(item.penalty)}</td>
+                      <td style={{ padding: '8px 10px', border: '1px solid #e5e7eb', textAlign: 'right', fontWeight: 500 }}>{formatIDR(item.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '10px 12px' }}>
+              <Checkbox
+                checked={extensionAgreed}
+                onChange={e => setExtensionAgreed(e.target.checked)}
+              >
+                <span style={{ fontSize: 13 }}>操作人员确认已与用户沟通并取得用户对展期方案的确认</span>
+              </Checkbox>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Create VA Code Modal */}

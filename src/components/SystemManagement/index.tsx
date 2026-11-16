@@ -7,6 +7,7 @@ import CaseList from '../CaseList';
 import RoleManagement from './RoleManagement';
 import RecoveryList from '../RecoveryList';
 import ReductionRuleConfig from './ReductionRuleConfig';
+import ExtensionRuleConfig from './ExtensionRuleConfig';
 import WorkOrderReview from '../WorkOrderReview';
 import ScheduleManagement from './ScheduleManagement';
 import AutoAllocationManagement from './AutoAllocationManagement';
@@ -60,6 +61,8 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ view, onViewDetail 
         return <OutsourcingConfig />;
       case 'reduction':
         return <ReductionRuleConfig />;
+      case 'extensionRule':
+        return <ExtensionRuleConfig />;
       case 'schedule':
         return <ScheduleManagement />;
       case 'account':

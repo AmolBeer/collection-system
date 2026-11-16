@@ -1,23 +1,19 @@
 import React, { useState } from 'react';
-import { Card, Table, Button, Modal, Input, Form, Select, Switch, message, Tooltip, Space } from 'antd';
+import { Card, Table, Button, Modal, Input, Form, Select, Switch, message } from 'antd';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { providers, labelStyle, getEnabledProvidersByType, nowStr, buildCommonColumns } from './shared';
 
 interface RCSTemplate {
   id: string; name: string; providerId: string; providerName: string;
-  content: string; status: 'active' | 'inactive'; createTime: string; description?: string;
+  strategyId: string; status: 'active' | 'inactive'; createTime: string; description?: string;
 }
 
 const defaultData: RCSTemplate[] = [
   { id: 'R001', name: 'RCS还款提醒', providerId: 'SP006', providerName: 'Google RBM',
-    content: '您好 {{customerName}}，您的 {{productName}} 应还金额 {{amount}}，到期日 {{dueDate}}。点击下方按钮立即还款。',
-    status: 'active', createTime: '2024-04-06 08:30:00', description: 'RCS富文本消息，支持按钮交互' },
+    strategyId: 'STRATEGY_RCS_REMINDER_001', status: 'active', createTime: '2024-04-06 08:30:00', description: 'RCS富文本还款提醒策略' },
   { id: 'R002', name: 'RCS逾期催收', providerId: 'SP006', providerName: 'Google RBM',
-    content: '{{customerName}}您好，您的贷款已逾期 {{overdueDays}} 天，欠款 {{amount}} 元。回复1立即还款，回复2转人工客服。',
-    status: 'active', createTime: '2024-04-12 10:00:00', description: '逾期RCS催收消息' },
+    strategyId: 'STRATEGY_RCS_OVERDUE_002', status: 'active', createTime: '2024-04-12 10:00:00', description: '逾期RCS催收策略' },
 ];
-
-const variables = ['{{customerName}}', '{{amount}}', '{{dueDate}}', '{{productName}}', '{{overdueDays}}', '{{phoneNumber}}'];
 
 const RCSTemplateMgmt: React.FC = () => {
   const [templates, setTemplates] = useState<RCSTemplate[]>(defaultData);
@@ -33,7 +29,6 @@ const RCSTemplateMgmt: React.FC = () => {
   const handleDelete = (id: string) => { setTemplates(p => p.filter(t => t.id !== id)); message.success('已删除'); };
   const handleCopy = (r: RCSTemplate) => { setTemplates(p => [...p, { ...r, id: `R${Date.now().toString().slice(-5)}`, name: `${r.name} - 副本`, status: 'inactive' as const, createTime: nowStr() }]); message.success('已复制'); };
   const handleToggle = (id: string, checked: boolean) => { setTemplates(p => p.map(t => t.id === id ? { ...t, status: checked ? 'active' : 'inactive' } : t)); };
-  const insertVar = (v: string) => { const cur = form.getFieldValue('content') || ''; form.setFieldsValue({ content: cur + v }); };
 
   const handleSubmit = async () => {
     const values = await form.validateFields();
@@ -51,8 +46,8 @@ const RCSTemplateMgmt: React.FC = () => {
   const columns = [
     ...buildCommonColumns<RCSTemplate>('RCS', { onEdit: handleEdit, onCopy: handleCopy, onDelete: handleDelete, onToggleStatus: handleToggle }),
     {
-      title: '发送内容', dataIndex: 'content', key: 'content', ellipsis: true,
-      render: (text: string) => <Tooltip title={text}><span style={{ fontSize: '13px', color: '#4b5563' }}>{text.length > 60 ? text.slice(0, 60) + '...' : text}</span></Tooltip>,
+      title: '策略ID', dataIndex: 'strategyId', key: 'strategyId', width: 280,
+      render: (text: string) => <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#7c3aed' }}>{text}</span>,
     },
   ];
 
@@ -65,7 +60,7 @@ const RCSTemplateMgmt: React.FC = () => {
       <Table dataSource={filtered} columns={columns} rowKey="id" pagination={{ pageSize: 10, showTotal: (t) => <span style={{ fontSize: '13px', color: '#6b7280' }}>共 {t} 条</span> }} size="middle" />
 
       <Modal title={<span style={{ color: '#0d4f3c' }}>{editing ? '编辑' : '创建'} RCS 模板</span>}
-        open={modalVisible} onOk={handleSubmit} onCancel={() => setModalVisible(false)} width={600} okText="保存" cancelText="取消"
+        open={modalVisible} onOk={handleSubmit} onCancel={() => setModalVisible(false)} width={560} okText="保存" cancelText="取消"
         okButtonProps={{ style: { backgroundColor: '#0d4f3c', borderColor: '#0d4f3c' } }} destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item name="name" label={<span style={labelStyle}>模板名称</span>} rules={[{ required: true, message: '请输入' }]}>
@@ -74,16 +69,9 @@ const RCSTemplateMgmt: React.FC = () => {
           <Form.Item name="providerId" label={<span style={labelStyle}>绑定服务商</span>} rules={[{ required: true, message: '请选择' }]}>
             <Select placeholder="选择服务商" style={{ borderRadius: 6 }} options={getEnabledProvidersByType('RCS').map(p => ({ value: p.id, label: `${p.name} (${p.id})` }))} />
           </Form.Item>
-          <Form.Item name="content" label={<span style={labelStyle}>发送内容</span>} rules={[{ required: true, message: '请输入发送内容' }]}>
-            <div style={{ marginBottom: 8 }}>
-              <Space wrap size={[4, 4]}>
-                {variables.map(v => (
-                  <Button key={v} type="text" size="small" onClick={() => insertVar(v)}
-                    style={{ padding: '2px 8px', border: '1px solid #0d4f3c', borderRadius: 6, fontSize: '12px', color: '#0d4f3c', height: 'auto' }}>{v}</Button>
-                ))}
-              </Space>
-            </div>
-            <Input.TextArea rows={5} placeholder="请输入RCS消息内容" style={{ borderRadius: 6 }} />
+          <Form.Item name="strategyId" label={<span style={labelStyle}>策略ID</span>} rules={[{ required: true, message: '请输入策略ID' }]}
+            extra={<span style={{ fontSize: '12px', color: '#9ca3af' }}>填写在RCS平台已配置好的策略ID</span>}>
+            <Input placeholder="例如：STRATEGY_RCS_REMINDER_001" style={{ borderRadius: 6, fontFamily: 'monospace' }} />
           </Form.Item>
           <Form.Item name="description" label={<span style={labelStyle}>描述</span>}>
             <Input.TextArea rows={2} placeholder="模板用途说明..." style={{ borderRadius: 6 }} />
