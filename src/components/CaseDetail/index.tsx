@@ -395,7 +395,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
   }
 
   // 展期申请记录（覆盖案件下所有订单的历史）
-  const [extensionHistory, setExtensionHistory] = useState<ExtensionHistoryRecord[]>([
+  const extensionHistory: ExtensionHistoryRecord[] = [
     {
       id: 'EXT001',
       orderId: 'ORD001',
@@ -470,7 +470,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       status: 'pending_confirm',
       operator: 'Dewi Anggraini',
     },
-  ]);
+  ];
 
   // 警告信数据
   const warningLetters: WarningLetter[] = [
