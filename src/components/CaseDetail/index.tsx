@@ -43,7 +43,7 @@ import {
 import { useLanguage } from '../../i18n/LanguageContext';
 import { ReductionRule, ReductionType, SettlementResult } from '../../types';
 import { findMatchingRule, calculateMaxReduction, allocateReduction, settlePayment } from '../../utils/reductionCalc';
-import { findExtensionRule, getOverdueStageByDays, getProductByLoanType, DEFAULT_EXTENSION_DAYS } from '../../data/extensionRules';
+import { findExtensionRule, getProductByLoanType, DEFAULT_EXTENSION_DAYS } from '../../data/extensionRules';
 
 // 银行logo映射
 const bankLogos: Record<string, string> = {
@@ -79,6 +79,7 @@ interface Bill {
   principal?: number;
   extensionCount?: number;
   extensionStatus?: 'can_extend' | 'pending' | 'extending';
+  extensionSource?: 'APP' | 'Collection';
 }
 
 interface VAInfo {
@@ -351,7 +352,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     { id: 'B012', orderId: 'ORD002', billNumber: 'INV-2024-1201', installments: 'Installment 6', dueDate: '01 Dec 2024', amount: 3200000, paidAmount: 0, status: 'unpaid', principal: 2500000, interest: 400000, serviceFee: 200000, penalty: 100000 },
     
     // 订单3: ORD003 (4期) - 可展期 + 已展期5次
-    { id: 'B013', orderId: 'ORD003', billNumber: 'INV-2024-0815', installments: 'Installment 1', dueDate: '15 Aug 2024', amount: 2000000, paidAmount: 0, status: 'overdue', principal: 1600000, interest: 240000, serviceFee: 120000, penalty: 40000, extensionCount: 5, extensionStatus: 'can_extend' },
+    { id: 'B013', orderId: 'ORD003', billNumber: 'INV-2024-0815', installments: 'Installment 1', dueDate: '15 Aug 2024', amount: 2000000, paidAmount: 0, status: 'overdue', principal: 1600000, interest: 240000, serviceFee: 120000, penalty: 40000, extensionCount: 5, extensionStatus: 'can_extend', extensionSource: 'APP' },
     { id: 'B014', orderId: 'ORD003', billNumber: 'INV-2024-0915', installments: 'Installment 2', dueDate: '15 Sep 2024', amount: 2000000, paidAmount: 0, status: 'unpaid', principal: 1600000, interest: 240000, serviceFee: 120000, penalty: 40000 },
     { id: 'B015', orderId: 'ORD003', billNumber: 'INV-2024-1015', installments: 'Installment 3', dueDate: '15 Oct 2024', amount: 2000000, paidAmount: 0, status: 'unpaid', principal: 1600000, interest: 240000, serviceFee: 120000, penalty: 40000 },
     { id: 'B016', orderId: 'ORD003', billNumber: 'INV-2024-1115', installments: 'Installment 4', dueDate: '15 Nov 2024', amount: 2000000, paidAmount: 0, status: 'unpaid', principal: 1600000, interest: 240000, serviceFee: 120000, penalty: 40000 },
@@ -365,8 +366,8 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     { id: 'B020', orderId: 'ORD005', billNumber: 'INV-2024-1005', installments: 'Installment 1', dueDate: '05 Oct 2024', amount: 1500000, paidAmount: 0, status: 'overdue', principal: 1200000, interest: 180000, serviceFee: 90000, penalty: 30000, extensionCount: 1, extensionStatus: 'pending' },
     { id: 'B021', orderId: 'ORD005', billNumber: 'INV-2024-1105', installments: 'Installment 2', dueDate: '05 Nov 2024', amount: 1500000, paidAmount: 0, status: 'unpaid', principal: 1200000, interest: 180000, serviceFee: 90000, penalty: 30000 },
     
-    // 订单6: ORD006 (2期) - 无展期状态（普通订单，无标签）
-    { id: 'B022', orderId: 'ORD006', billNumber: 'INV-2024-1010', installments: 'Installment 1', dueDate: '10 Oct 2024', amount: 1200000, paidAmount: 0, status: 'overdue', principal: 1000000, interest: 150000, serviceFee: 75000, penalty: 25000 },
+    // 订单6: ORD006 (2期) - Collection 端可展期
+    { id: 'B022', orderId: 'ORD006', billNumber: 'INV-2024-1010', installments: 'Installment 1', dueDate: '10 Oct 2024', amount: 1200000, paidAmount: 0, status: 'overdue', principal: 1000000, interest: 150000, serviceFee: 75000, penalty: 25000, extensionCount: 0, extensionStatus: 'can_extend', extensionSource: 'Collection' },
     { id: 'B023', orderId: 'ORD006', billNumber: 'INV-2024-1110', installments: 'Installment 2', dueDate: '10 Nov 2024', amount: 1200000, paidAmount: 0, status: 'unpaid', principal: 1000000, interest: 150000, serviceFee: 75000, penalty: 25000 },
   ]);
 
@@ -380,6 +381,8 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
   // 展期申请记录类型
   type ExtensionRecordStatus = 'pending_confirm' | 'confirmed' | 'expired' | 'cancelled';
 
+  type ExtensionInitiator = 'collector' | 'app';
+
   interface ExtensionHistoryRecord {
     id: string;
     orderId: string;
@@ -390,6 +393,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     feeAmount: number;
     validityDays: number;
     status: ExtensionRecordStatus;
+    initiator: ExtensionInitiator; // 发起方：催收员发起 / 用户 APP 自助发起
     confirmedTime?: string;
     operator?: string;
   }
@@ -406,6 +410,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       feeAmount: 250000,
       validityDays: 7,
       status: 'confirmed',
+      initiator: 'collector',
       confirmedTime: '13 Apr 2026, 09:20',
       operator: 'Dewi Anggraini',
     },
@@ -419,6 +424,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       feeAmount: 280000,
       validityDays: 7,
       status: 'pending_confirm',
+      initiator: 'collector',
       operator: 'Dewi Anggraini',
     },
     {
@@ -431,7 +437,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       feeAmount: 350000,
       validityDays: 5,
       status: 'expired',
-      operator: 'Budi Santoso',
+      initiator: 'app',
     },
     {
       id: 'EXT004',
@@ -443,6 +449,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       feeAmount: 180000,
       validityDays: 14,
       status: 'confirmed',
+      initiator: 'collector',
       confirmedTime: '16 Feb 2026, 08:30',
       operator: 'Siti Aminah',
     },
@@ -456,7 +463,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       feeAmount: 160000,
       validityDays: 7,
       status: 'cancelled',
-      operator: 'Rudi Hartono',
+      initiator: 'app',
     },
     {
       id: 'EXT006',
@@ -468,6 +475,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       feeAmount: 150000,
       validityDays: 5,
       status: 'pending_confirm',
+      initiator: 'collector',
       operator: 'Dewi Anggraini',
     },
   ];
@@ -793,7 +801,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     { value: 'other', label: '其他' },
   ];
 
-  // 展期费用与还款计划试算：按产品+逾期阶段匹配展期规则的比例
+  // 展期费用与还款计划试算：按产品 + 逾期天数 + 当前期次匹配展期规则
   const extensionTrial = useMemo(() => {
     const selectedOrders = Array.from(new Set(
       selectedBills.map(id => bills.find(b => b.id === id)?.orderId).filter(Boolean)
@@ -804,14 +812,21 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
 
     // 展期范围：订单下所有未结清账单
     const targetBills = bills.filter(b => b.orderId === targetOrderId && b.status !== 'paid');
+    const parseDue = (value: string) => {
+      const parsed = dayjs(value, 'DD MMM YYYY');
+      return parsed.isValid() ? parsed : dayjs(value);
+    };
+    const sortedBills = [...targetBills].sort((a, b) => parseDue(a.dueDate).valueOf() - parseDue(b.dueDate).valueOf());
+    const currentInstallmentText = sortedBills[0]?.installments.match(/\d+/)?.[0];
+    const currentInstallment = currentInstallmentText ? Number(currentInstallmentText) : undefined;
 
     const principalBase = targetBills.reduce((sum, b) => sum + (b.principal || 0), 0);
     const interestBase = targetBills.reduce((sum, b) => sum + (b.interest || 0), 0);
     const penaltyBase = targetBills.reduce((sum, b) => sum + (b.penalty || 0), 0);
 
     const product = getProductByLoanType(caseSummary.loanType);
-    const stage = getOverdueStageByDays(caseSummary.daysPastDue);
-    const rule = findExtensionRule(product, stage);
+    const overdueDays = caseSummary.daysPastDue;
+    const rule = findExtensionRule(product, overdueDays, currentInstallment);
     const ratio = rule?.feeRatio ?? { principal: 0, interest: 0, penalty: 0 };
 
     const rows = [
@@ -823,11 +838,6 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
     const total = rows.reduce((sum, row) => sum + row.fee, 0);
 
     // 展期后还款计划：当前账单顺延至申请日 + 规则配置的展期天数，后续账单按原期限结构整体平移
-    const parseDue = (value: string) => {
-      const parsed = dayjs(value, 'DD MMM YYYY');
-      return parsed.isValid() ? parsed : dayjs(value);
-    };
-    const sortedBills = [...targetBills].sort((a, b) => parseDue(a.dueDate).valueOf() - parseDue(b.dueDate).valueOf());
     const applyDate = dayjs();
     const extensionDays = rule?.extensionDays ?? DEFAULT_EXTENSION_DAYS;
     const newFirstDue = applyDate.add(extensionDays, 'day');
@@ -873,7 +883,8 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
       targetOrderId,
       targetBillIds: targetBills.map(b => b.id),
       product,
-      stage,
+      overdueDays,
+      installment: currentInstallment,
       rule,
       rows,
       total,
@@ -897,8 +908,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
 
     // 二次校验案件状态与适用规则
     const product = getProductByLoanType(caseSummary.loanType);
-    const stage = getOverdueStageByDays(caseSummary.daysPastDue);
-    const currentRule = findExtensionRule(product, stage);
+    const currentRule = findExtensionRule(product, caseSummary.daysPastDue, extensionTrial.installment);
     if (!currentRule) {
       message.error('案件当前状态不符合展期条件：未匹配到适用的展期规则');
       return;
@@ -1716,7 +1726,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
             rowKey="id"
             size="middle"
             pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50'] }}
-            scroll={{ x: 1280 }}
+            scroll={{ x: 1420 }}
             columns={[
               {
                 title: '展期订单',
@@ -1733,6 +1743,17 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                 dataIndex: 'applyTime',
                 key: 'applyTime',
                 width: 170,
+              },
+              {
+                title: '发起方',
+                dataIndex: 'initiator',
+                key: 'initiator',
+                width: 140,
+                render: (initiator: ExtensionInitiator) => (
+                  initiator === 'app'
+                    ? <Tag color="blue">用户 APP 发起</Tag>
+                    : <Tag color="purple">催收员发起</Tag>
+                ),
               },
               {
                 title: '申请原因',
@@ -1826,8 +1847,10 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                 dataIndex: 'operator',
                 key: 'operator',
                 width: 140,
-                render: (op: string | undefined) => (
-                  <span style={{ color: '#4b5563' }}>{op || '-'}</span>
+                render: (op: string | undefined, record: ExtensionHistoryRecord) => (
+                  <span style={{ color: '#4b5563' }}>
+                    {record.initiator === 'app' ? '用户本人（APP）' : op || '-'}
+                  </span>
                 ),
               },
             ]}
@@ -2181,7 +2204,12 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
                           const orderExt = orderBills.find(b => b.extensionStatus !== undefined);
                           if (!orderExt) return null;
                           const statusMap: Record<string, { color: string; label: string }> = {
-                            can_extend: { color: 'blue', label: t.canExtend },
+                            can_extend: {
+                              color: orderExt.extensionSource === 'Collection' ? 'purple' : 'blue',
+                              label: orderExt.extensionSource
+                                ? `${t.canExtend}(${orderExt.extensionSource})`
+                                : t.canExtend,
+                            },
                             pending: { color: 'gold', label: t.pendingExtension },
                             extending: { color: 'orange', label: t.extending },
                           };
@@ -2758,7 +2786,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                 <span style={{ color: '#6b7280' }}>适用规则</span>
-                <span>{extensionTrial.rule?.name}（{extensionTrial.product} / {extensionTrial.stage}）</span>
+                <span>{extensionTrial.rule?.name}（{extensionTrial.product} / 逾期 {extensionTrial.overdueDays} 天 / 第 {extensionTrial.installment ?? '-'} 期）</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                 <span style={{ color: '#6b7280' }}>展期天数</span>
@@ -2825,8 +2853,8 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
               <span style={{ fontWeight: 500 }}>费用试算</span>
               <span style={{ fontSize: 12, color: '#6b7280' }}>
                 {extensionTrial.rule
-                  ? `匹配规则：${extensionTrial.rule.name}（${extensionTrial.product} / ${extensionTrial.stage}）`
-                  : `未匹配到展期规则（${extensionTrial.product} / ${extensionTrial.stage}），暂按 0% 试算`}
+                  ? `匹配规则：${extensionTrial.rule.name}（${extensionTrial.product} / 逾期 ${extensionTrial.overdueDays} 天 / 第 ${extensionTrial.installment ?? '-'} 期）`
+                  : `未匹配到展期规则（${extensionTrial.product} / 逾期 ${extensionTrial.overdueDays} 天 / 第 ${extensionTrial.installment ?? '-'} 期），暂按 0% 试算`}
               </span>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16, fontSize: 13 }}>
@@ -2857,7 +2885,7 @@ const CaseDetail: React.FC<CaseDetailProps> = ({ caseId }) => {
             <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 500 }}>展期后还款计划试算</span>
               <span style={{ fontSize: 12, color: '#6b7280' }}>
-                当前账单顺延至申请日 + 15 天，后续账单按原期限结构整体顺延 {extensionTrial.shiftDays} 天
+                当前账单顺延至申请日 + {extensionTrial.extensionDays} 天，后续账单按原期限结构整体顺延 {extensionTrial.shiftDays} 天
               </span>
             </div>
             <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: 6, marginBottom: 16 }}>

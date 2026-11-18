@@ -1,17 +1,24 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Tag, message, Space, Popconfirm } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Tag, message, Space, Popconfirm, Switch, Radio } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   extensionRuleStore,
   extensionProducts as products,
-  extensionOverdueStages as overdueStages,
   EXTENSION_VALIDITY_DAYS_OPTIONS,
   DEFAULT_EXTENSION_DAYS,
   DEFAULT_EXTENSION_TIMES,
   FIXED_PENALTY_RATIO,
+  isValidNumericCondition,
+  matchesNumericCondition,
+  numericConditionsOverlap,
   type ExtensionRule,
 } from '../../data/extensionRules';
+
+const installmentOptions = Array.from({ length: 12 }, (_, index) => {
+  const installment = String(index + 1);
+  return { value: installment, label: `第 ${installment} 期` };
+});
 
 // 生成规则code：EXT-RULE-XXX 递增
 const generateRuleCode = (rules: ExtensionRule[]) => {
@@ -20,6 +27,14 @@ const generateRuleCode = (rules: ExtensionRule[]) => {
     return matched ? Math.max(max, Number(matched[1])) : max;
   }, 0);
   return `EXT-RULE-${String(maxSeq + 1).padStart(3, '0')}`;
+};
+
+const getNumericConditionError = (values: string[] | undefined, minValue: number, label: string) => {
+  if (!values || values.length === 0) return `请输入${label}`;
+  const invalid = values.find(value => !isValidNumericCondition(value, minValue));
+  return invalid
+    ? `「${invalid}」格式不正确，请输入不小于 ${minValue} 的整数或区间（如 3、5-10），且区间起始值不能大于结束值`
+    : null;
 };
 
 const ExtensionRuleConfig: React.FC = () => {
@@ -37,9 +52,9 @@ const ExtensionRuleConfig: React.FC = () => {
 
   // 查询条件
   const [keyword, setKeyword] = useState('');
-  const [stageFilter, setStageFilter] = useState<string | undefined>();
+  const [overdueDaysFilter, setOverdueDaysFilter] = useState<number | undefined>();
   const [appliedKeyword, setAppliedKeyword] = useState('');
-  const [appliedStage, setAppliedStage] = useState<string | undefined>();
+  const [appliedOverdueDays, setAppliedOverdueDays] = useState<number | undefined>();
 
   const filteredRules = useMemo(() => {
     return rules.filter(rule => {
@@ -47,21 +62,21 @@ const ExtensionRuleConfig: React.FC = () => {
         const kw = appliedKeyword.toLowerCase();
         if (!rule.name.toLowerCase().includes(kw) && !rule.code.toLowerCase().includes(kw)) return false;
       }
-      if (appliedStage && !rule.overdueStages.includes(appliedStage)) return false;
+      if (appliedOverdueDays !== undefined && !matchesNumericCondition(appliedOverdueDays, rule.overdueDays)) return false;
       return true;
     });
-  }, [rules, appliedKeyword, appliedStage]);
+  }, [rules, appliedKeyword, appliedOverdueDays]);
 
   const handleSearch = () => {
     setAppliedKeyword(keyword);
-    setAppliedStage(stageFilter);
+    setAppliedOverdueDays(overdueDaysFilter);
   };
 
   const handleReset = () => {
     setKeyword('');
-    setStageFilter(undefined);
+    setOverdueDaysFilter(undefined);
     setAppliedKeyword('');
-    setAppliedStage(undefined);
+    setAppliedOverdueDays(undefined);
   };
 
   const handleAdd = () => {
@@ -71,6 +86,7 @@ const ExtensionRuleConfig: React.FC = () => {
       validityDays: 7,
       extensionDays: DEFAULT_EXTENSION_DAYS,
       extensionTimes: DEFAULT_EXTENSION_TIMES,
+      enabled: true,
       feeRatio: { principal: 0, interest: 0, penalty: FIXED_PENALTY_RATIO },
     });
     setModalVisible(true);
@@ -81,11 +97,13 @@ const ExtensionRuleConfig: React.FC = () => {
     form.setFieldsValue({
       name: rule.name,
       products: rule.products,
-      overdueStages: rule.overdueStages,
+      installments: rule.installments,
+      overdueDays: rule.overdueDays,
       feeRatio: { ...rule.feeRatio, penalty: FIXED_PENALTY_RATIO },
       validityDays: rule.validityDays,
       extensionDays: rule.extensionDays,
       extensionTimes: rule.extensionTimes,
+      enabled: rule.enabled,
     });
     setModalVisible(true);
   };
@@ -95,16 +113,27 @@ const ExtensionRuleConfig: React.FC = () => {
     message.success('规则删除成功');
   };
 
-  // 校验：同一产品的同一逾期阶段只允许存在一个规则（逾期阶段支持多选）
+  // 列表内快捷启停，停用后该规则不参与案件匹配
+  const handleToggleStatus = (ruleId: string, enabled: boolean) => {
+    updateRules(rules.map(rule => (rule.id === ruleId ? { ...rule, enabled } : rule)));
+    message.success(`规则已${enabled ? '启用' : '停用'}`);
+  };
+
+  // 校验：同一产品在逾期天数与期次均有交集时不允许重复配置
   const validateConflict = (values: any, currentId?: string) => {
-    const { products: selectedProducts = [], overdueStages: selectedStages = [] } = values;
-    const conflict = rules.find(rule => {
+    const {
+      products: selectedProducts = [],
+      overdueDays: selectedDays = [],
+      installments: selectedInstallments = [],
+    } = values;
+    return rules.find(rule => {
       if (rule.id === currentId) return false;
-      const stageOverlap = rule.overdueStages.some(stage => selectedStages.includes(stage));
-      if (!stageOverlap) return false;
-      return rule.products.some(p => selectedProducts.includes(p));
+      return (
+        rule.products.some(product => selectedProducts.includes(product)) &&
+        numericConditionsOverlap(rule.overdueDays, selectedDays) &&
+        numericConditionsOverlap(rule.installments, selectedInstallments)
+      );
     });
-    return conflict;
   };
 
   const handleSubmit = async () => {
@@ -113,8 +142,9 @@ const ExtensionRuleConfig: React.FC = () => {
       const conflict = validateConflict(values, editingRule?.id);
       if (conflict) {
         const conflictProducts = values.products.filter((p: string) => conflict.products.includes(p)).join('、');
-        const conflictStages = values.overdueStages.filter((s: string) => conflict.overdueStages.includes(s)).join('、');
-        message.error(`产品「${conflictProducts}」在 ${conflictStages} 阶段已存在规则「${conflict.name}」，同一产品同一阶段不允许重复配置`);
+        const conflictDays = values.overdueDays.filter((day: string) => numericConditionsOverlap([day], conflict.overdueDays)).join('、');
+        const conflictInstallments = values.installments.filter((item: string) => numericConditionsOverlap([item], conflict.installments)).join('、');
+        message.error(`产品「${conflictProducts}」在逾期天数「${conflictDays}」、期次「${conflictInstallments}」已与规则「${conflict.name}」存在交集，请调整后再保存`);
         return;
       }
 
@@ -175,6 +205,21 @@ const ExtensionRuleConfig: React.FC = () => {
       ),
     },
     {
+      title: '状态',
+      dataIndex: 'enabled',
+      key: 'enabled',
+      width: 110,
+      align: 'center',
+      render: (enabled: boolean, record) => (
+        <Switch
+          checked={enabled}
+          checkedChildren="启用"
+          unCheckedChildren="停用"
+          onChange={checked => handleToggleStatus(record.id, checked)}
+        />
+      ),
+    },
+    {
       title: '适用产品',
       dataIndex: 'products',
       key: 'products',
@@ -186,13 +231,24 @@ const ExtensionRuleConfig: React.FC = () => {
       ),
     },
     {
-      title: '逾期阶段',
-      dataIndex: 'overdueStages',
-      key: 'overdueStages',
-      width: 160,
-      render: (stages: string[]) => (
+      title: '适用期次',
+      dataIndex: 'installments',
+      key: 'installments',
+      width: 180,
+      render: (installments: string[]) => (
         <Space size={[4, 4]} wrap>
-          {stages.map(stage => <Tag key={stage} color="orange">{stage}</Tag>)}
+          {installments.map(item => <Tag key={item} color="purple">第 {item} 期</Tag>)}
+        </Space>
+      ),
+    },
+    {
+      title: '逾期天数',
+      dataIndex: 'overdueDays',
+      key: 'overdueDays',
+      width: 200,
+      render: (days: string[]) => (
+        <Space size={[4, 4]} wrap>
+          {days.map(day => <Tag key={day} color="orange">{day} 天</Tag>)}
         </Space>
       ),
     },
@@ -299,13 +355,15 @@ const ExtensionRuleConfig: React.FC = () => {
             style={{ width: 240 }}
             allowClear
           />
-          <Select
-            placeholder="逾期阶段"
-            value={stageFilter}
-            onChange={setStageFilter}
-            allowClear
+          <InputNumber
+            placeholder="逾期天数"
+            value={overdueDaysFilter}
+            onChange={value => setOverdueDaysFilter(value ?? undefined)}
+            onPressEnter={handleSearch}
+            min={0}
+            precision={0}
+            addonAfter="天"
             style={{ width: 160 }}
-            options={overdueStages.map(stage => ({ value: stage, label: stage }))}
           />
           <Button type="primary" onClick={handleSearch}>查询</Button>
           <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
@@ -315,7 +373,7 @@ const ExtensionRuleConfig: React.FC = () => {
       <Card>
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: '#6b7280', fontSize: 13 }}>
-            同一产品的任一逾期阶段仅允许存在一个规则（逾期阶段支持多选）
+            同一产品的逾期天数与期次均存在交集时，不允许重复配置
           </span>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             新增展期规则
@@ -326,7 +384,7 @@ const ExtensionRuleConfig: React.FC = () => {
           dataSource={filteredRules}
           rowKey="id"
           size="small"
-          scroll={{ x: 1600 }}
+          scroll={{ x: 1950 }}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
@@ -364,6 +422,18 @@ const ExtensionRuleConfig: React.FC = () => {
           </Form.Item>
 
           <Form.Item
+            name="enabled"
+            label="状态"
+            rules={[{ required: true, message: '请选择状态' }]}
+            extra="停用后该规则不参与案件展期匹配，列表和案件详情均按启用规则生效"
+          >
+            <Radio.Group>
+              <Radio value={true}>启用</Radio>
+              <Radio value={false}>停用</Radio>
+            </Radio.Group>
+          </Form.Item>
+
+          <Form.Item
             name="products"
             label="适用产品"
             rules={[{ required: true, message: '请选择适用产品' }]}
@@ -377,14 +447,39 @@ const ExtensionRuleConfig: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            name="overdueStages"
-            label="逾期阶段"
-            rules={[{ required: true, message: '请选择逾期阶段' }]}
+            name="installments"
+            label="适用期次"
+            extra="可选择第 1 期至第 12 期，支持多选"
+            rules={[{ required: true, message: '请选择适用期次' }]}
           >
             <Select
               mode="multiple"
-              placeholder="请选择逾期阶段（可多选）"
-              options={overdueStages.map(stage => ({ value: stage, label: stage }))}
+              placeholder="请选择适用期次（可多选）"
+              options={installmentOptions}
+              maxTagCount="responsive"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="overdueDays"
+            label="逾期天数"
+            extra="支持多个单值或区间，区间包含首尾天数，例如：1、3、5-10"
+            rules={[
+              { required: true, message: '请输入逾期天数' },
+              {
+                validator: (_, value: string[]) => {
+                  const error = getNumericConditionError(value, 0, '逾期天数');
+                  return error ? Promise.reject(new Error(error)) : Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <Select
+              mode="tags"
+              placeholder="输入逾期天数后回车，如 1、3、5-10"
+              tokenSeparators={[',', '，', '、', ' ']}
+              open={false}
+              suffixIcon={null}
               maxTagCount="responsive"
             />
           </Form.Item>
@@ -477,7 +572,7 @@ const ExtensionRuleConfig: React.FC = () => {
 
           <div style={{ fontSize: 12, color: '#9ca3af', lineHeight: '18px' }}>
             展期费按比例计算：本金 × 本金比例 + 罚息 × 100%（利息不计入展期费）。
-            逾期阶段支持多选；同一产品的任一阶段仅允许存在一个规则，重复配置将无法保存。
+            期次和逾期天数均支持单值与区间混合配置；同一产品的两个条件均存在交集时无法保存。
           </div>
         </Form>
       </Modal>

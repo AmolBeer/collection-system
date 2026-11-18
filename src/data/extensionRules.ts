@@ -10,11 +10,13 @@ export interface ExtensionRule {
   name: string;
   code: string;
   products: string[];
-  overdueStages: string[];
+  installments: string[]; // 适用期次，支持单值和区间，如 1、3-6
+  overdueDays: string[]; // 适用逾期天数，支持单值和区间，如 1、5-10
   feeRatio: ExtensionFeeRatio;
   validityDays: number; // APP 端展期入口开放的有效期天数
   extensionDays: number; // 展期天数：首期账单顺延的天数
   extensionTimes: number; // 展期次数：允许申请展期的最大次数
+  enabled: boolean; // 启用状态：停用后不参与案件展期规则匹配
   createdAt: string;
   updatedAt: string;
 }
@@ -29,45 +31,50 @@ export const DEFAULT_EXTENSION_TIMES = 99;
 export const FIXED_PENALTY_RATIO = 100;
 
 export const extensionProducts = ['个人贷款', '企业贷款', '信用卡', '消费金融', '其他'];
-export const extensionOverdueStages = ['M0', 'M1', 'M2', 'M3', 'M4+'];
 
 export const defaultExtensionRules: ExtensionRule[] = [
   {
     id: '1',
-    name: '个人贷款M1展期规则',
+    name: '个人贷款短期逾期展期规则',
     code: 'EXT-RULE-001',
     products: ['个人贷款'],
-    overdueStages: ['M1'],
+    installments: ['1', '2', '3', '5'],
+    overdueDays: ['1-15', '20', '25-30'],
     feeRatio: { principal: 2, interest: 0, penalty: 100 },
     validityDays: 7,
     extensionDays: 15,
     extensionTimes: 99,
+    enabled: true,
     createdAt: '2024-05-10 10:00:00',
     updatedAt: '2024-05-10 10:00:00',
   },
   {
     id: '2',
-    name: '信用卡M2展期规则',
+    name: '信用卡中期逾期展期规则',
     code: 'EXT-RULE-002',
     products: ['信用卡'],
-    overdueStages: ['M2'],
+    installments: ['1', '2', '3', '4', '5', '6'],
+    overdueDays: ['31-60'],
     feeRatio: { principal: 3, interest: 0, penalty: 100 },
     validityDays: 5,
     extensionDays: 15,
     extensionTimes: 99,
+    enabled: true,
     createdAt: '2024-05-12 14:30:00',
     updatedAt: '2024-05-12 14:30:00',
   },
   {
     id: '3',
-    name: '企业贷款M3展期规则',
+    name: '企业贷款长期逾期展期规则',
     code: 'EXT-RULE-003',
     products: ['企业贷款'],
-    overdueStages: ['M3'],
+    installments: ['2', '4', '5', '6'],
+    overdueDays: ['61', '63-90'],
     feeRatio: { principal: 5, interest: 0, penalty: 100 },
     validityDays: 14,
     extensionDays: 15,
     extensionTimes: 99,
+    enabled: true,
     createdAt: '2024-05-15 09:20:00',
     updatedAt: '2024-05-15 09:20:00',
   },
@@ -75,16 +82,51 @@ export const defaultExtensionRules: ExtensionRule[] = [
 
 // 内存中的数据源：配置页的增删改会写回，案件详情读取最新规则
 export const extensionRuleStore: { rules: ExtensionRule[] } = {
-  rules: defaultExtensionRules.map(rule => ({ ...rule, products: [...rule.products], feeRatio: { ...rule.feeRatio } })),
+  rules: defaultExtensionRules.map(rule => ({
+    ...rule,
+    products: [...rule.products],
+    installments: [...rule.installments],
+    overdueDays: [...rule.overdueDays],
+    feeRatio: { ...rule.feeRatio },
+  })),
 };
 
-// 逾期天数 -> 逾期阶段
-export const getOverdueStageByDays = (days: number): string => {
-  if (days <= 0) return 'M0';
-  if (days <= 30) return 'M1';
-  if (days <= 60) return 'M2';
-  if (days <= 90) return 'M3';
-  return 'M4+';
+interface NumericRange {
+  min: number;
+  max: number;
+}
+
+const parseNumericCondition = (condition: string): NumericRange | null => {
+  const normalized = condition.trim().replace(/[～~—–]/g, '-');
+  const matched = normalized.match(/^(\d+)(?:-(\d+))?$/);
+  if (!matched) return null;
+  const min = Number(matched[1]);
+  const max = Number(matched[2] ?? matched[1]);
+  if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || min > max) return null;
+  return { min, max };
+};
+
+export const isValidNumericCondition = (condition: string, minValue = 0): boolean => {
+  const range = parseNumericCondition(condition);
+  return range !== null && range.min >= minValue;
+};
+
+const parseNumericConditions = (conditions: string[]): NumericRange[] => {
+  return conditions
+    .map(parseNumericCondition)
+    .filter((range): range is NumericRange => range !== null);
+};
+
+// 判断数字是否命中任意一个单值或闭区间
+export const matchesNumericCondition = (value: number, conditions: string[]): boolean => {
+  return parseNumericConditions(conditions).some(range => value >= range.min && value <= range.max);
+};
+
+// 判断两组单值/区间是否存在交集，用于规则冲突校验
+export const numericConditionsOverlap = (left: string[], right: string[]): boolean => {
+  const leftRanges = parseNumericConditions(left);
+  const rightRanges = parseNumericConditions(right);
+  return leftRanges.some(a => rightRanges.some(b => a.min <= b.max && b.min <= a.max));
 };
 
 // 案件贷款类型 -> 产品
@@ -97,11 +139,19 @@ export const getProductByLoanType = (loanType: string): string => {
   return '其他';
 };
 
-// 按产品 + 逾期阶段匹配展期规则，未匹配时返回 null
-export const findExtensionRule = (product: string, stage: string): ExtensionRule | null => {
+// 按产品 + 逾期天数 + 当前期次匹配展期规则，未匹配时返回 null
+export const findExtensionRule = (
+  product: string,
+  overdueDays: number,
+  installment?: number
+): ExtensionRule | null => {
   return (
     extensionRuleStore.rules.find(
-      rule => rule.overdueStages.includes(stage) && rule.products.includes(product)
+      rule =>
+        rule.enabled &&
+        rule.products.includes(product) &&
+        matchesNumericCondition(overdueDays, rule.overdueDays) &&
+        (installment === undefined || matchesNumericCondition(installment, rule.installments))
     ) || null
   );
 };
